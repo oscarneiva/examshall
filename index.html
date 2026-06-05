@@ -405,11 +405,71 @@
             margin-top: 6px;
         }
 
+        /* Toast popup */
+        #toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 32px 40px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            z-index: 200;
+            text-align: center;
+            max-width: 400px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        #toast.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        #toast-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.2);
+            z-index: 199;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        #toast-backdrop.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #toast p {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #toast button {
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 28px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        #toast button:hover {
+            opacity: 0.85;
+        }
+
         /* Bottom controls */
         .bottom-controls {
             position: fixed;
             bottom: 20px;
-            right: 24px;
             display: flex;
             gap: 10px;
         }
@@ -464,7 +524,7 @@
                 <input type="time" id="start-time">
             </div>
             <button class="btn btn-primary" id="btn-start">Add Timer</button>
-            <button class="btn-link" id="btn-load">Load saved timers</button>
+            <button class="btn btn-primary" id="btn-load">Load Timer</button>
             <button class="setup-cancel" id="btn-cancel">Cancel</button>
             <input type="file" id="file-input" accept=".json">
         </div>
@@ -482,8 +542,15 @@
         </div>
 
         <div class="bottom-controls">
-            <button class="btn-bottom" id="btn-download">Download Timers</button>
+            <button class="btn btn-primary" id="btn-download">Save Timer</button>
         </div>
+    </div>
+
+    <!-- Toast popup -->
+    <div id="toast-backdrop"></div>
+    <div id="toast">
+        <p>Click on <strong>Save Timer</strong> to download your session in case of a shutdown.</p>
+        <button id="toast-dismiss">OK</button>
     </div>
 
     <script>
@@ -745,6 +812,22 @@
                 tick();
                 tickInterval = setInterval(tick, 1000);
             }
+
+            // Show save reminder on first timer
+            if (timers.length === 1) {
+                showToast();
+            }
+        }
+
+        // Toast popup
+        function showToast() {
+            document.getElementById('toast').classList.add('visible');
+            document.getElementById('toast-backdrop').classList.add('visible');
+        }
+
+        function hideToast() {
+            document.getElementById('toast').classList.remove('visible');
+            document.getElementById('toast-backdrop').classList.remove('visible');
         }
 
         // Remove a timer
@@ -974,6 +1057,10 @@
             timers.length = 0;
             timers.push(...newOrder);
         });
+
+        // Toast dismiss
+        document.getElementById('toast-dismiss').addEventListener('click', hideToast);
+        document.getElementById('toast-backdrop').addEventListener('click', hideToast);
 
         // Initial state: show setup
         showSetup();

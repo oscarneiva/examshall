@@ -6,9 +6,12 @@ A minimalistic web-based timer for IB and IGCSE exams. Single-page HTML/CSS/JS a
 
 - **IB exams**: 5-minute reading time, 30-minute warning, 5-minute warning
 - **IGCSE exams**: 5-minute warning
-- **Up to 6 simultaneous timers** in a responsive grid
+- **Up to 16 simultaneous timers** in a grid (4 per row, wraps to new rows)
+- Drag-and-drop to reorder cards
 - Live countdown with current time display
-- Editable start time per card for handling delays
+- Inline editable time field per card (reading time for IB, start time for IGCSE) with bordered input — all warning times recalculate automatically
+- Default start time set to the current time when adding a timer
+- Save reminder popup shown after adding the first timer
 - Save/load all timer configurations as JSON
 - Remove individual timers with the x button
 - Color-coded cards: blue (IB), red (IGCSE)
@@ -21,23 +24,29 @@ A minimalistic web-based timer for IB and IGCSE exams. Single-page HTML/CSS/JS a
 2. Select exam board (IB or IGCSE)
 3. Enter exam name, duration, and start time
 4. Click **Add Timer**
-5. Click the **+** card to add more timers (up to 6)
+5. Click the **+** card to add more timers (up to 16)
 
-### Editing start time
+### Editing times
 
-Click **Edit** next to the start time on the timer card to adjust for delays. All warning times recalculate automatically.
+- **IB**: click the reading time value directly to adjust — start and all warnings recalculate (start = reading + 5 min)
+- **IGCSE**: click the start time value directly to adjust — all warnings recalculate
 
 ### Save / Load
 
-- **Download Timers** (bottom-right) saves all timer configurations as `timer.json`
-- **Load saved timers** on the setup screen imports a previously saved `timer.json`
+- After the first timer is added, a popup reminds you to use **Save Timer** to download your session in case of a shutdown
+- **Save Timer** (bottom center) saves all timer configurations as `timer.json`
+- **Load Timer** on the setup screen imports a previously saved `timer.json`
+
+### Reordering
+
+Drag any card and drop it onto another card's position to reorder.
 
 ## Timer milestones
 
 | Milestone    | IB  | IGCSE |
 |-------------|-----|-------|
-| Reading     | Start - 5 min | -- |
-| Start       | User-defined | User-defined |
+| Reading     | Start - 5 min (editable) | -- |
+| Start       | Reading + 5 min | User-defined (editable) |
 | 30 min left | End - 30 min | -- |
 | 5 min left  | End - 5 min | End - 5 min |
 | End         | Start + duration | Start + duration |
