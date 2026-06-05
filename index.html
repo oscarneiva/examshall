@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -301,6 +301,16 @@
             color: #fff;
         }
 
+        .start-edit-row.highlighted-ib {
+            background: #1a56db;
+            color: #fff;
+        }
+
+        .start-edit-row.highlighted-igcse {
+            background: #dc2626;
+            color: #fff;
+        }
+
         .countdown-section {
             margin-top: 20px;
             text-align: center;
@@ -314,9 +324,13 @@
         }
 
         .countdown-time {
+            display: inline-block;
             font-size: 3.6rem;
             font-weight: 700;
             font-variant-numeric: tabular-nums;
+            padding: 4px 18px;
+            border-radius: 8px;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .exam-card.ib .countdown-time {
@@ -327,6 +341,16 @@
             color: #dc2626;
         }
 
+        .exam-card.ib .countdown-time.highlighted-ib {
+            background: #1a56db;
+            color: #fff;
+        }
+
+        .exam-card.igcse .countdown-time.highlighted-igcse {
+            background: #dc2626;
+            color: #fff;
+        }
+
         /* Editable start time */
         .start-edit-row {
             display: flex;
@@ -334,6 +358,7 @@
             align-items: center;
             padding: 10px 18px;
             border-radius: 6px;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .start-edit-row .label {
@@ -521,7 +546,7 @@
             </div>
             <div class="form-group">
                 <label for="start-time">Start Time</label>
-                <input type="time" id="start-time">
+                <input type="time" id="start-time" lang="en-GB">
             </div>
             <button class="btn btn-primary" id="btn-start">Add Timer</button>
             <button class="btn btn-primary" id="btn-load">Load Timer</button>
@@ -698,12 +723,18 @@
                     row.dataset.key = t.key;
                     row.innerHTML = `
                         <span class="label">${t.label}</span>
-                        <input type="time" class="start-edit-input" value="${minutesToTimeStr(t.time)}">
+                        <input type="text" inputmode="numeric" maxlength="5" size="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" placeholder="HH:MM" class="start-edit-input" value="${minutesToTimeStr(t.time)}">
                     `;
                     rowsContainer.appendChild(row);
 
                     const editInput = row.querySelector('.start-edit-input');
                     editInput.addEventListener('change', () => {
+                        if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(editInput.value)) {
+                            // Invalid entry: revert to the current value
+                            const cur = timer.times.find(x => x.key === t.key);
+                            editInput.value = minutesToTimeStr(cur.time);
+                            return;
+                        }
                         const newTime = timeStrToMinutes(editInput.value);
                         if (timer.board === 'IB') {
                             timer.startMin = newTime + 5;
@@ -742,14 +773,17 @@
 
         // Refresh row values after start time edit
         function refreshCardRows(timer) {
+            const editableKey = timer.board === 'IB' ? 'reading' : 'start';
             const rowsContainer = timer.el.querySelector('.time-rows');
             const rows = rowsContainer.children;
             timer.times.forEach((t, i) => {
                 const row = rows[i];
-                if (t.key === 'start') {
-                    row.querySelector('.start-edit-input').value = minutesToTimeStr(t.time);
+                if (t.key === editableKey) {
+                    const input = row.querySelector('.start-edit-input');
+                    if (input) input.value = minutesToTimeStr(t.time);
                 } else {
-                    row.querySelector('.value').textContent = minutesToTimeStr(t.time);
+                    const valueEl = row.querySelector('.value');
+                    if (valueEl) valueEl.textContent = minutesToTimeStr(t.time);
                 }
             });
         }
@@ -864,15 +898,13 @@
                 const rowsContainer = timer.el.querySelector('.time-rows');
                 const rows = rowsContainer.children;
 
-                // Highlight rows
+                // Determine whether a milestone has been reached, and whether one
+                // is being hit during the current minute
+                let currentIdx = -1;
+                let activeMilestoneIdx = -1;
                 timer.times.forEach((t, i) => {
-                    const row = rows[i];
-                    if (!row) return;
-                    row.classList.remove('highlighted-ib', 'highlighted-igcse');
-                    if (t.key === 'start') return;
-                    if (currentMin >= t.time) {
-                        row.classList.add(highlightClass);
-                    }
+                    if (currentMin >= t.time) currentIdx = i;
+                    if (currentMin === t.time) activeMilestoneIdx = i;
                 });
 
                 // Countdown
@@ -886,6 +918,22 @@
                 const endSec = endTime.time * 60;
                 const startSec = startTime.time * 60;
                 const readingSec = readingTime ? readingTime.time * 60 : null;
+
+                // Highlight: the milestone row during its minute, then the remaining time
+                timer.times.forEach((t, i) => {
+                    if (rows[i]) rows[i].classList.remove('highlighted-ib', 'highlighted-igcse');
+                });
+                countdownEl.classList.remove('highlighted-ib', 'highlighted-igcse');
+
+                if (activeMilestoneIdx >= 0) {
+                    // A milestone is being hit this minute — highlight its row
+                    if (rows[activeMilestoneIdx]) {
+                        rows[activeMilestoneIdx].classList.add(highlightClass);
+                    }
+                } else if (currentIdx >= 0 && currentSec < endSec) {
+                    // After the milestone's minute, highlight the remaining time
+                    countdownEl.classList.add(highlightClass);
+                }
 
                 if (currentSec >= endSec) {
                     statusEl.textContent = 'EXAM ENDED';
