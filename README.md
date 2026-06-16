@@ -1,4 +1,4 @@
-# Exam Timer
+# Exams Hall
 
 A minimalistic web-based timer for IB and IGCSE exams. Single-page HTML/CSS/JS application with no dependencies.
 
