@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Log candidate incidents during an exam: toilet breaks, sickbay, late arrivals, with leave and return times. Export the finished sheet as a CSV.">
     <title>Incident Log Sheet - Exams Hall</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 0 24 24' width='24'%3E%3Cpath fill='%23ffffff' d='M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z'/%3E%3C/svg%3E">
     <style>
@@ -174,6 +175,27 @@
             color: #777;
         }
 
+        /* Pencil button for editing the sheet's room / exam / date */
+        .meta-edit {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: #bbb;
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px;
+        }
+
+        .meta-edit:hover {
+            color: #000;
+        }
+
+        .meta-edit svg {
+            width: 18px;
+            height: 18px;
+            display: block;
+        }
+
         .log-table {
             width: 100%;
             border-collapse: collapse;
@@ -322,7 +344,7 @@
     <!-- Setup overlay -->
     <div class="overlay" id="setup-overlay">
         <div class="setup-card">
-            <h1>Create Incident Log Sheet</h1>
+            <h1 id="setup-title">Create Incident Log Sheet</h1>
             <div class="form-group">
                 <label for="room">Room</label>
                 <input type="text" id="room" placeholder="e.g. Sports Hall">
@@ -336,6 +358,7 @@
                 <input type="date" id="sheet-date" lang="en-GB">
             </div>
             <button class="btn btn-primary" id="btn-start">Start Log Sheet</button>
+            <button class="btn btn-secondary" id="btn-setup-cancel" style="display: none;">Cancel</button>
         </div>
     </div>
 
@@ -349,6 +372,11 @@
                 <span><span class="meta-label">Room:</span> <strong id="meta-room"></strong></span>
                 <span><span class="meta-label">Exam:</span> <strong id="meta-exam"></strong></span>
                 <span><span class="meta-label">Date:</span> <strong id="meta-date"></strong></span>
+                <button class="meta-edit" id="btn-edit-meta" title="Edit room, exam and date" aria-label="Edit room, exam and date">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                    </svg>
+                </button>
             </div>
 
             <table class="log-table">
@@ -417,7 +445,8 @@
         // State
         const logs = []; // array of { candidate, incident, left, back }
         let editingIndex = -1; // -1 = adding new
-        const sheet = { room: '', exam: '', date: '' }; // date is the formatted DD/MM/YYYY
+        // date is the formatted DD/MM/YYYY; dateIso keeps the raw YYYY-MM-DD the date input needs
+        const sheet = { room: '', exam: '', date: '', dateIso: '' };
 
         // DOM refs
         const setupOverlay = document.getElementById('setup-overlay');
@@ -428,6 +457,9 @@
         const roomInput = document.getElementById('room');
         const examNameInput = document.getElementById('exam-name');
         const dateInput = document.getElementById('sheet-date');
+        const setupTitle = document.getElementById('setup-title');
+        const btnStart = document.getElementById('btn-start');
+        const btnSetupCancel = document.getElementById('btn-setup-cancel');
 
         const entryTitle = document.getElementById('entry-title');
         const entryCandidate = document.getElementById('entry-candidate');
@@ -457,8 +489,24 @@
         const today = new Date();
         dateInput.value = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
 
-        // Start the sheet
-        document.getElementById('btn-start').addEventListener('click', () => {
+        // Open the setup overlay: pass true to edit the details of a sheet already in progress
+        function openSheetSetup(isEdit) {
+            if (isEdit) {
+                roomInput.value = sheet.room;
+                examNameInput.value = sheet.exam;
+                dateInput.value = sheet.dateIso;
+            }
+
+            setupTitle.textContent = isEdit ? 'Edit Log Sheet' : 'Create Incident Log Sheet';
+            btnStart.textContent = isEdit ? 'Save Changes' : 'Start Log Sheet';
+            btnSetupCancel.style.display = isEdit ? 'block' : 'none';
+
+            setupOverlay.classList.remove('hidden');
+            roomInput.focus();
+        }
+
+        // Start the sheet, or save edited details
+        btnStart.addEventListener('click', () => {
             const room = roomInput.value.trim();
             const exam = examNameInput.value.trim();
             const date = dateInput.value;
@@ -470,6 +518,7 @@
 
             sheet.room = room;
             sheet.exam = exam;
+            sheet.dateIso = date;
             sheet.date = formatDate(date);
 
             document.getElementById('meta-room').textContent = room;
@@ -478,6 +527,13 @@
 
             setupOverlay.classList.add('hidden');
             logView.classList.add('active');
+        });
+
+        // Pencil next to the sheet details reopens the form pre-filled
+        document.getElementById('btn-edit-meta').addEventListener('click', () => openSheetSetup(true));
+
+        btnSetupCancel.addEventListener('click', () => {
+            setupOverlay.classList.add('hidden');
         });
 
         // Render the table

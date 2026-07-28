@@ -58,7 +58,8 @@ Drag any card and drop it onto another card's position to reorder.
 1. On load, enter the **Room**, **Exam**, and **Date**
 2. Press **Add Log** to record an incident — **Candidate**, **Incident**, **Left** time, **Back** time (times are 24-hour `HH:MM`)
 3. Click any row to edit or delete it
-4. **Save Sheet (CSV)** downloads the sheet as a `.csv` file (named after the exam and date), including the Room/Exam/Date header rows
+4. Click the pencil icon beside the Room/Exam/Date line to correct those details later — same icon and behaviour as the timer's card pencil
+5. **Save Sheet (CSV)** downloads the sheet as a `.csv` file (named after the exam and date), including the Room/Exam/Date header rows
 
 > The CSV is generated entirely in the browser and saved to the device — the site is static, with no backend or upload.
 
