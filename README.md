@@ -1,6 +1,6 @@
 # Exams Hall
 
-A minimalistic web-based timer for IB, IGCSE, and custom exams. Single-page HTML/CSS/JS application with no dependencies.
+A minimalistic web-based timer for IB, IGCSE, and custom exams, plus an incident log sheet for invigilators. Static HTML/CSS/JS with no dependencies, build step, or backend.
 
 ## Features
 
@@ -18,18 +18,21 @@ A minimalistic web-based timer for IB, IGCSE, and custom exams. Single-page HTML
 - Save Timer button only appears when there are unsaved changes
 - Save/load all timer configurations as JSON
 - Remove individual timers with the x button
-- Color-coded cards: blue (IB), red (IGCSE), user-chosen (Custom)
+- Color-coded cards: blue (IB), red (IGCSE), user-chosen (Custom) — the accent drives the border, countdown, status label, and milestone highlights (the exam name stays black on every board)
+- Bold, color-matched status label above the countdown (**Reading Time**, **Time Remaining**, **Extra Time**, **EXAM ENDED**)
+- Typing `1153` into any time field auto-formats to `11:53`
 - High-contrast black text on white background; inverted white text on highlighted warnings
-- Large, readable fonts — milestone rows sized close to the countdown for visibility at a distance
+- Exam name and countdown scale to the width of their own card (CSS container queries), so four cards per row stay readable without overflowing
 
 ## Usage
 
 1. Open `index.html` in a browser — the **Exams Hall** landing page
 2. Click **Exam Timer** (or **Incident Log Sheet**)
 3. On the timer page, select exam board (IB, IGCSE, or Custom)
-4. Enter exam name, duration, and start time; optionally enable extra time and set its percentage (for Custom: also choose warnings and border color)
-5. Click **Add Timer**
-6. Click the **+** card to add more timers (up to 16)
+4. Enter exam name, duration, and the start time — for IB this field is the **reading time**, and the exam start is derived as 5 minutes later
+5. Optionally enable extra time and set its percentage (for Custom: also choose which warnings to show and the border color)
+6. Click **Add Timer**
+7. Click the **+** card to add more timers (up to 16)
 
 ### Editing a timer
 
@@ -63,14 +66,18 @@ Drag any card and drop it onto another card's position to reorder.
 
 | Milestone    | IB  | IGCSE | Custom |
 |-------------|-----|-------|--------|
-| Reading     | Start - 5 min | -- | -- |
+| Reading     | User-defined | -- | -- |
 | Start       | Reading + 5 min | User-defined | User-defined |
 | 30 min left | End - 30 min | -- | End - 30 min (optional, checkbox) |
 | 5 min left  | End - 5 min | End - 5 min | End - 5 min (optional, checkbox) |
 | End         | Start + duration | Start + duration | Start + duration |
 | Extra time  | End + chosen % of duration (optional, checkbox) | End + chosen % of duration (optional, checkbox) | End + chosen % of duration (optional, checkbox) |
 
-The extra-time row is labelled with its percentage rather than a generic name — e.g. `EXTRA 25%`, or `EXTRA 50%` if that is what was chosen.
+The row you type into directly on the card is the **user-defined** one — reading for IB, start for IGCSE and Custom.
+
+A warning row is skipped when the exam is too short to reach it: the 30-minute row needs a duration over 30 minutes, the 5-minute row over 5. The extra-time row is labelled with its percentage rather than a generic name — e.g. `EXTRA 25%`, or `EXTRA 50%` if that is what was chosen.
+
+Custom cards omit the board name above the exam title, since "CUSTOM" carries no meaning to a candidate; IB and IGCSE cards still show theirs.
 
 When a milestone is reached, its row is highlighted (blue for IB, red for IGCSE, the chosen color for Custom) for one minute. After that minute the highlight moves to the remaining-time countdown — with inverted white text — and stays there until the exam ends.
 
@@ -83,8 +90,12 @@ exams-hall/
   index.html         # Landing page (links to the tools)
   timer.html         # Exam timer application (HTML + CSS + JS)
   incident-log.html  # Incident log sheet (HTML + CSS + JS)
+  CNAME              # Custom domain for GitHub Pages (examshall.com)
+  LICENSE            # MIT
   README.md          # This file
 ```
+
+Each page is fully self-contained — its own markup, styles, and script in one file, with nothing shared between them.
 
 ## Configuration file format
 
@@ -137,7 +148,9 @@ Loading also accepts a single object (legacy format).
 
 ## Browser support
 
-Any modern browser (Chrome, Firefox, Safari, Edge). No build step or server required. The layout is responsive across desktops, tablets (e.g. iPad), and phones.
+Any current browser (Chrome, Firefox, Safari, Edge). No build step or server required — open the files directly, or serve them statically. The layout is responsive across desktops, tablets (e.g. iPad), and phones: the card grid steps from 4 columns to 3, 2, then 1 as the screen narrows.
+
+The cards use [CSS container query units](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_containment/Container_queries) (`cqi`) to size the exam name and countdown against the card rather than the viewport. That needs Chrome/Edge 105+, Safari 16+, or Firefox 110+ (all released in 2022–23). Older browsers drop those `font-size` declarations entirely and render the exam name and countdown at the inherited body size — small, but every timer still keeps correct time.
 
 ## License
 
