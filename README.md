@@ -91,10 +91,21 @@ exams-hall/
   index.html         # Landing page (links to the tools)
   timer.html         # Exam timer application (HTML + CSS + JS)
   incident-log.html  # Incident log sheet (HTML + CSS + JS)
+  favicon.ico        # 96x96 icon - the one Google Search reads
+  favicon.svg        # Scalable icon for modern browsers
+  og-image.png       # 1200x630 preview image for shared links
+  robots.txt         # Allows all crawlers, points to the sitemap
+  sitemap.xml        # Lists the three pages for search engines
   CNAME              # Custom domain for GitHub Pages (examshall.com)
   LICENSE            # MIT
   README.md          # This file
 ```
+
+The favicon must stay a real file at the site root. An inline `data:` URI renders fine in a browser tab but cannot be fetched by Google's favicon crawler, so search results fall back to a generic globe.
+
+### Search metadata
+
+Each page carries a `description`, a `canonical` URL, and Open Graph / Twitter Card tags; `index.html` also carries `WebApplication` JSON-LD. If a page's title or description changes, update its `og:title` / `og:description` to match — search engines treat a mismatch as a quality signal. `sitemap.xml` lists all three URLs and should gain a row whenever a page is added.
 
 Each page is fully self-contained — its own markup, styles, and script in one file, with nothing shared between them.
 
