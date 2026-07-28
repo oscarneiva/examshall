@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exams Hall</title>
+    <title>Timer - Exams Hall</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 0 24 24' width='24'%3E%3Cpath fill='%23ffffff' d='M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z'/%3E%3C/svg%3E">
     <style>
         * {
@@ -79,6 +79,60 @@
         .form-group select:focus,
         .form-group input:focus {
             border-color: #555;
+        }
+
+        .form-group input[type="color"] {
+            padding: 4px;
+            height: 44px;
+            cursor: pointer;
+        }
+
+        .form-group label.checkbox-inline {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 400;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .form-group label.checkbox-inline:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-group input[type="checkbox"] {
+            width: auto;
+            padding: 0;
+            border: none;
+        }
+
+        .extra-time-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .extra-time-row label.checkbox-inline {
+            margin-bottom: 0;
+        }
+
+        .extra-percent {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #333;
+        }
+
+        .extra-percent input {
+            width: 80px;
+            text-align: center;
+        }
+
+        .extra-percent input:disabled {
+            background: #f5f5f5;
+            color: #aaa;
+            cursor: not-allowed;
         }
 
         .duration-row {
@@ -182,12 +236,13 @@
         /* Card grid */
         .cards-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 24px;
             width: 100%;
         }
 
         .exam-card {
+            container-type: inline-size;
             border: 4px solid;
             border-radius: 14px;
             padding: 28px 32px;
@@ -218,10 +273,20 @@
             border-color: #dc2626;
         }
 
-        .card-remove {
+        .exam-card.custom {
+            border-color: var(--accent);
+        }
+
+        .card-actions {
             position: absolute;
             top: 10px;
             right: 14px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .card-remove {
             background: none;
             border: none;
             font-size: 1.4rem;
@@ -235,10 +300,31 @@
             color: #666;
         }
 
+        .card-edit {
+            background: none;
+            border: none;
+            color: #bbb;
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px;
+        }
+
+        .card-edit:hover {
+            color: #666;
+        }
+
+        .card-edit svg {
+            width: 18px;
+            height: 18px;
+            display: block;
+        }
+
         .exam-name {
-            font-size: 3.5rem;
+            font-size: clamp(1.4rem, 14cqi, 3.5rem);
             font-weight: 700;
+            line-height: 1.15;
             text-align: center;
+            overflow-wrap: break-word;
             margin-bottom: 2px;
         }
 
@@ -257,6 +343,10 @@
 
         .exam-card.igcse .exam-board-label {
             color: #dc2626;
+        }
+
+        .exam-card.custom .exam-board-label {
+            color: var(--accent);
         }
 
         .exam-duration-label {
@@ -302,6 +392,27 @@
             color: #fff;
         }
 
+        .time-row.highlighted-custom {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* Inline-editable primary time: reading for IB, start for IGCSE/Custom */
+        .start-edit-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 18px;
+            border-radius: 6px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .start-edit-row .label {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
         .start-edit-row.highlighted-ib {
             background: #1a56db;
             color: #fff;
@@ -312,24 +423,61 @@
             color: #fff;
         }
 
+        .start-edit-row.highlighted-custom {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .start-edit-input {
+            font-family: inherit;
+            font-size: 1.2rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            width: auto;
+            text-align: center;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            padding: 1px 6px;
+            background: #fff;
+            color: #000;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .start-edit-input:focus {
+            border-color: #888;
+        }
+
         .countdown-section {
             margin-top: 10px;
             text-align: center;
         }
 
         .countdown-status {
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #777;
+            font-size: 2.0rem;
+            font-weight: 700;
             margin-bottom: 4px;
+        }
+
+        .exam-card.ib .countdown-status {
+            color: #1a56db;
+        }
+
+        .exam-card.igcse .countdown-status {
+            color: #dc2626;
+        }
+
+        .exam-card.custom .countdown-status {
+            color: var(--accent);
         }
 
         .countdown-time {
             display: inline-block;
-            font-size: 6rem;
+            font-size: clamp(2.4rem, 23cqi, 7.5rem);
             font-weight: 700;
             font-variant-numeric: tabular-nums;
-            padding: 4px 18px;
+            white-space: nowrap;
+            padding: 4px 14px;
             border-radius: 8px;
             transition: background-color 0.3s, color 0.3s;
         }
@@ -342,6 +490,10 @@
             color: #dc2626;
         }
 
+        .exam-card.custom .countdown-time {
+            color: var(--accent);
+        }
+
         .exam-card.ib .countdown-time.highlighted-ib {
             background: #1a56db;
             color: #fff;
@@ -352,50 +504,9 @@
             color: #fff;
         }
 
-        /* Editable start time */
-        .start-edit-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 4px 18px;
-            border-radius: 6px;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        .start-edit-row .label {
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-
-        .start-edit-input {
-            font-size: 1.2rem;
-            font-weight: 700;
-            font-family: inherit;
-            font-variant-numeric: tabular-nums;
-            border: 2px solid #ccc;
-            border-radius: 6px;
-            padding: 2px 10px;
-            background: #fff;
-            color: #000;
-            outline: none;
-            width: auto;
-            text-align: center;
-        }
-
-        .start-edit-input:focus {
-            border-color: #888;
-        }
-
-        .start-edit-input::-webkit-calendar-picker-indicator,
-        .start-edit-input::-webkit-inner-spin-button,
-        .start-edit-input::-webkit-clear-button {
-            -webkit-appearance: none;
-            appearance: none;
-            display: none !important;
-            width: 0;
-            height: 0;
-            margin: 0;
-            padding: 0;
+        .exam-card.custom .countdown-time.highlighted-custom {
+            background: var(--accent);
+            color: #fff;
         }
 
         /* Add timer button (inside grid) */
@@ -544,22 +655,14 @@
         /* Responsive: small desktops / large tablets -> 3 columns */
         @media (max-width: 1100px) {
             .cards-grid {
-                grid-template-columns: repeat(3, 1fr);
+                grid-template-columns: repeat(3, minmax(0, 1fr));
             }
         }
 
         /* Responsive: tablets (iPad portrait) -> 2 columns */
         @media (max-width: 820px) {
             .cards-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .exam-name {
-                font-size: 2.6rem;
-            }
-
-            .countdown-time {
-                font-size: 5rem;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
 
@@ -586,14 +689,6 @@
                 padding: 22px 22px;
             }
 
-            .exam-name {
-                font-size: 2.2rem;
-            }
-
-            .countdown-time {
-                font-size: 4.4rem;
-            }
-
             .setup-card {
                 padding: 28px 24px;
             }
@@ -609,17 +704,27 @@
     <!-- Setup overlay -->
     <div id="setup-overlay">
         <div class="setup-card">
-            <h1>Exam Timer</h1>
+            <h1 id="setup-title">Exam Timer</h1>
             <div class="form-group">
                 <label for="exam-board">Exam Board</label>
                 <select id="exam-board">
                     <option value="IB">IB</option>
                     <option value="IGCSE">IGCSE</option>
+                    <option value="Custom">Custom</option>
                 </select>
+            </div>
+            <div class="form-group" id="custom-warnings-group">
+                <label>Warnings</label>
+                <label class="checkbox-inline"><input type="checkbox" id="custom-30min" checked> 30 min warning</label>
+                <label class="checkbox-inline"><input type="checkbox" id="custom-5min" checked> 5 min warning</label>
+            </div>
+            <div class="form-group" id="custom-color-group">
+                <label for="custom-color">Border Color</label>
+                <input type="color" id="custom-color" value="#7c3aed">
             </div>
             <div class="form-group">
                 <label for="exam-name">Exam Name</label>
-                <input type="text" id="exam-name" placeholder="e.g. English B Paper 1 HL">
+                <input type="text" id="exam-name" placeholder="e.g. English A Paper 1 HL">
             </div>
             <div class="form-group">
                 <label>Duration</label>
@@ -629,7 +734,17 @@
                 </div>
             </div>
             <div class="form-group">
-                <label for="start-time">Start Time (24-hour, HH:MM)</label>
+                <label>Extra Time</label>
+                <div class="extra-time-row">
+                    <label class="checkbox-inline"><input type="checkbox" id="extra-time-enabled" checked> Show extra time</label>
+                    <span class="extra-percent">
+                        <input type="number" id="extra-percent" min="1" max="200" value="25">
+                        <span>%</span>
+                    </span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="start-time" id="start-time-label">Start Time (24-hour, HH:MM)</label>
                 <input type="text" id="start-time" inputmode="numeric" maxlength="5" placeholder="HH:MM" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" lang="en-GB">
             </div>
             <button class="btn btn-primary" id="btn-start">Add Timer</button>
@@ -674,13 +789,32 @@
         const timers = []; // array of { id, board, name, durationMin, startMin, times, el }
         let tickInterval = null;
         let nextId = 0;
+        let editingTimerId = null; // id of the timer being edited via the setup overlay, or null when adding
+        let hasUnsavedChanges = false;
         const MAX_TIMERS = 16;
+        const DEFAULT_CUSTOM_COLOR = '#7c3aed';
+        const DEFAULT_EXTRA_PERCENT = 25;
 
         // DOM refs
         const setupOverlay = document.getElementById('setup-overlay');
         const timerView = document.getElementById('timer-view');
         const cardsGrid = document.getElementById('cards-grid');
         const btnCancel = document.getElementById('btn-cancel');
+        const setupTitle = document.getElementById('setup-title');
+        const btnStart = document.getElementById('btn-start');
+        const btnLoad = document.getElementById('btn-load');
+        const btnDownload = document.getElementById('btn-download');
+
+        // Track whether there are changes not yet saved via "Save Timer"
+        function markDirty() {
+            hasUnsavedChanges = true;
+            btnDownload.style.display = '';
+        }
+
+        function markSaved() {
+            hasUnsavedChanges = false;
+            btnDownload.style.display = 'none';
+        }
 
         // Form refs
         const examBoardSelect = document.getElementById('exam-board');
@@ -688,6 +822,13 @@
         const durationHoursInput = document.getElementById('duration-hours');
         const durationMinutesInput = document.getElementById('duration-minutes');
         const startTimeInput = document.getElementById('start-time');
+        const customWarningsGroup = document.getElementById('custom-warnings-group');
+        const customColorGroup = document.getElementById('custom-color-group');
+        const custom30Input = document.getElementById('custom-30min');
+        const custom5Input = document.getElementById('custom-5min');
+        const customColorInput = document.getElementById('custom-color');
+        const extraTimeEnabledInput = document.getElementById('extra-time-enabled');
+        const extraPercentInput = document.getElementById('extra-percent');
 
         // Helpers
         function pad(n) {
@@ -722,7 +863,7 @@
         }
 
         // Compute key times for a timer
-        function computeTimes(board, startMin, durationMin) {
+        function computeTimes(board, startMin, durationMin, opts) {
             const times = [];
             const endMin = startMin + durationMin;
             const isIB = board === 'IB';
@@ -733,44 +874,112 @@
 
             times.push({ key: 'start', label: 'START', time: startMin });
 
-            if (isIB && durationMin > 30) {
+            if (opts.show30 && durationMin > 30) {
                 times.push({ key: '30min', label: '30 MIN', time: endMin - 30 });
             }
 
-            if (durationMin > 5) {
+            if (opts.show5 && durationMin > 5) {
                 times.push({ key: '5min', label: '5 MIN', time: endMin - 5 });
             }
 
             times.push({ key: 'end', label: 'END', time: endMin });
 
-            // 25% extra time, finishing after the normal end
-            const extraMin = Math.round(durationMin * 0.25);
-            times.push({ key: 'extratime', label: 'EXTRA TIME', time: endMin + extraMin });
+            // Optional extra-time allowance, finishing after the normal end
+            if (opts.showExtra) {
+                const extraMin = Math.round(durationMin * opts.extraPercent / 100);
+                times.push({ key: 'extratime', label: `EXTRA ${opts.extraPercent}%`, time: endMin + extraMin });
+            }
 
             return times;
         }
 
-        // Show setup form
-        function showSetup() {
-            // Reset form
-            examNameInput.value = '';
-            durationHoursInput.value = '1';
-            durationMinutesInput.value = '30';
-            const now = new Date();
-            startTimeInput.value = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-            examBoardSelect.value = 'IB';
+        // Resolve the milestone options for a timer. IB always shows both warning rows,
+        // IGCSE only the 5-min, Custom follows its own checkboxes; extra time is
+        // user-controlled for every board.
+        function resolveOptions(data) {
+            const warnings = data.board === 'IB' ? { show30: true, show5: true }
+                : data.board === 'IGCSE' ? { show30: false, show5: true }
+                : { show30: !!data.show30Min, show5: !!data.show5Min };
 
-            // Show cancel button if timers already exist
-            btnCancel.style.display = timers.length > 0 ? 'block' : 'none';
+            const percent = Number(data.extraPercent);
+            return {
+                ...warnings,
+                // Timers saved before extra time was optional have no flag, so keep showing it
+                showExtra: data.showExtraTime !== false,
+                extraPercent: percent > 0 ? percent : DEFAULT_EXTRA_PERCENT
+            };
+        }
+
+        // Show the setup form: pass a timer to edit it, or omit to add a new one
+        function showSetup(timer) {
+            editingTimerId = timer ? timer.id : null;
+
+            if (timer) {
+                examBoardSelect.value = timer.board;
+                examNameInput.value = timer.name;
+                durationHoursInput.value = Math.floor(timer.durationMin / 60);
+                durationMinutesInput.value = timer.durationMin % 60;
+                // The field holds reading time for IB (start = reading + 5) and start time otherwise
+                startTimeInput.value = minutesToTimeStr(timer.board === 'IB' ? timer.startMin - 5 : timer.startMin);
+                custom30Input.checked = timer.show30Min !== false;
+                custom5Input.checked = timer.show5Min !== false;
+                customColorInput.value = timer.color || DEFAULT_CUSTOM_COLOR;
+                extraTimeEnabledInput.checked = timer.showExtraTime !== false;
+                extraPercentInput.value = timer.extraPercent || DEFAULT_EXTRA_PERCENT;
+            } else {
+                examNameInput.value = '';
+                durationHoursInput.value = '1';
+                durationMinutesInput.value = '30';
+                const now = new Date();
+                startTimeInput.value = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                examBoardSelect.value = 'IB';
+                custom30Input.checked = true;
+                custom5Input.checked = true;
+                customColorInput.value = DEFAULT_CUSTOM_COLOR;
+                extraTimeEnabledInput.checked = true;
+                extraPercentInput.value = DEFAULT_EXTRA_PERCENT;
+            }
+
+            setupTitle.textContent = timer ? 'Edit Timer' : 'Exam Timer';
+            btnStart.textContent = timer ? 'Save Changes' : 'Add Timer';
+            btnLoad.style.display = timer ? 'none' : '';
+            updateCustomFieldsVisibility();
+            updateStartTimeLabel();
+            updateExtraPercentState();
+
+            // Show cancel button if timers already exist (or always, when editing)
+            btnCancel.style.display = (timer || timers.length > 0) ? 'block' : 'none';
 
             setupOverlay.classList.remove('hidden');
         }
 
+        // The percentage only applies when extra time is switched on
+        function updateExtraPercentState() {
+            extraPercentInput.disabled = !extraTimeEnabledInput.checked;
+        }
+
+        // Show/hide the Custom-board-only fields based on the current selection
+        function updateCustomFieldsVisibility() {
+            const isCustom = examBoardSelect.value === 'Custom';
+            customWarningsGroup.style.display = isCustom ? '' : 'none';
+            customColorGroup.style.display = isCustom ? '' : 'none';
+        }
+
+        // For IB the single time field is the reading time (start = reading + 5 min)
+        const startTimeLabel = document.getElementById('start-time-label');
+        function updateStartTimeLabel() {
+            startTimeLabel.textContent = examBoardSelect.value === 'IB'
+                ? 'Reading Time (24-hour, HH:MM)'
+                : 'Start Time (24-hour, HH:MM)';
+        }
+
         // Build a card DOM element for a timer
         function buildCard(timer) {
-            const isIB = timer.board === 'IB';
             const card = document.createElement('div');
-            card.className = 'exam-card ' + (isIB ? 'ib' : 'igcse');
+            card.className = 'exam-card ' + (timer.board === 'IB' ? 'ib' : timer.board === 'IGCSE' ? 'igcse' : 'custom');
+            if (timer.board === 'Custom') {
+                card.style.setProperty('--accent', timer.color || DEFAULT_CUSTOM_COLOR);
+            }
             card.dataset.timerId = timer.id;
             card.draggable = true;
 
@@ -782,18 +991,36 @@
             });
             card.addEventListener('mouseup', () => { card.draggable = true; });
 
-            // Remove button
+            // Top-right actions: edit (opens the setup overlay pre-filled for this timer), then remove
+            const cardActions = document.createElement('div');
+            cardActions.className = 'card-actions';
+
+            const editBtn = document.createElement('button');
+            editBtn.className = 'card-edit';
+            editBtn.title = 'Edit timer';
+            editBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                </svg>
+            `;
+            editBtn.addEventListener('click', () => showSetup(timer));
+            cardActions.appendChild(editBtn);
+
             const removeBtn = document.createElement('button');
             removeBtn.className = 'card-remove';
             removeBtn.textContent = '\u00d7';
             removeBtn.addEventListener('click', () => removeTimer(timer.id));
-            card.appendChild(removeBtn);
+            cardActions.appendChild(removeBtn);
 
-            // Header
-            const boardLabel = document.createElement('div');
-            boardLabel.className = 'exam-board-label';
-            boardLabel.textContent = timer.board;
-            card.appendChild(boardLabel);
+            card.appendChild(cardActions);
+
+            // Header (the board label is omitted for Custom exams)
+            if (timer.board !== 'Custom') {
+                const boardLabel = document.createElement('div');
+                boardLabel.className = 'exam-board-label';
+                boardLabel.textContent = timer.board;
+                card.appendChild(boardLabel);
+            }
 
             const nameLabel = document.createElement('div');
             nameLabel.className = 'exam-name';
@@ -806,52 +1033,7 @@
             card.appendChild(durLabel);
 
             // Time rows
-            const rowsContainer = document.createElement('div');
-            rowsContainer.className = 'time-rows';
-
-            const editableKey = timer.board === 'IB' ? 'reading' : 'start';
-
-            timer.times.forEach(t => {
-                if (t.key === editableKey) {
-                    const row = document.createElement('div');
-                    row.className = 'start-edit-row';
-                    row.dataset.key = t.key;
-                    row.innerHTML = `
-                        <span class="label">${t.label}</span>
-                        <input type="text" inputmode="numeric" maxlength="5" size="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" placeholder="HH:MM" class="start-edit-input" value="${minutesToTimeStr(t.time)}">
-                    `;
-                    rowsContainer.appendChild(row);
-
-                    const editInput = row.querySelector('.start-edit-input');
-                    editInput.addEventListener('change', () => {
-                        if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(editInput.value)) {
-                            // Invalid entry: revert to the current value
-                            const cur = timer.times.find(x => x.key === t.key);
-                            editInput.value = minutesToTimeStr(cur.time);
-                            return;
-                        }
-                        const newTime = timeStrToMinutes(editInput.value);
-                        if (timer.board === 'IB') {
-                            timer.startMin = newTime + 5;
-                        } else {
-                            timer.startMin = newTime;
-                        }
-                        timer.times = computeTimes(timer.board, timer.startMin, timer.durationMin);
-                        refreshCardRows(timer);
-                    });
-                } else {
-                    const row = document.createElement('div');
-                    row.className = 'time-row';
-                    row.dataset.key = t.key;
-                    row.innerHTML = `
-                        <span class="label">${t.label}</span>
-                        <span class="value">${minutesToTimeStr(t.time)}</span>
-                    `;
-                    rowsContainer.appendChild(row);
-                }
-            });
-
-            card.appendChild(rowsContainer);
+            card.appendChild(buildTimeRows(timer));
 
             // Countdown
             const countdownSection = document.createElement('div');
@@ -866,21 +1048,58 @@
             return card;
         }
 
-        // Refresh row values after start time edit
-        function refreshCardRows(timer) {
+        // Build the time-rows element. The board's primary time — reading for IB,
+        // start for IGCSE/Custom — is an inline-editable input; the rest are plain rows.
+        function buildTimeRows(timer) {
+            const rowsContainer = document.createElement('div');
+            rowsContainer.className = 'time-rows';
+
             const editableKey = timer.board === 'IB' ? 'reading' : 'start';
-            const rowsContainer = timer.el.querySelector('.time-rows');
-            const rows = rowsContainer.children;
-            timer.times.forEach((t, i) => {
-                const row = rows[i];
+
+            timer.times.forEach(t => {
+                const row = document.createElement('div');
+                row.dataset.key = t.key;
+
                 if (t.key === editableKey) {
-                    const input = row.querySelector('.start-edit-input');
-                    if (input) input.value = minutesToTimeStr(t.time);
+                    row.className = 'start-edit-row';
+                    row.innerHTML = `
+                        <span class="label">${t.label}</span>
+                        <input type="text" inputmode="numeric" maxlength="5" size="5" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" placeholder="HH:MM" class="start-edit-input" value="${minutesToTimeStr(t.time)}">
+                    `;
+
+                    const editInput = row.querySelector('.start-edit-input');
+                    editInput.addEventListener('input', autoColon);
+                    editInput.addEventListener('change', () => {
+                        if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(editInput.value)) {
+                            // Invalid entry: revert to the current value
+                            const cur = timer.times.find(x => x.key === t.key);
+                            editInput.value = minutesToTimeStr(cur.time);
+                            return;
+                        }
+                        const newTime = timeStrToMinutes(editInput.value);
+                        // For IB the editable row is the reading time; the exam starts 5 min later
+                        timer.startMin = timer.board === 'IB' ? newTime + 5 : newTime;
+                        timer.times = computeTimes(timer.board, timer.startMin, timer.durationMin, resolveOptions(timer));
+                        rebuildTimeRows(timer);
+                        markDirty();
+                    });
                 } else {
-                    const valueEl = row.querySelector('.value');
-                    if (valueEl) valueEl.textContent = minutesToTimeStr(t.time);
+                    row.className = 'time-row';
+                    row.innerHTML = `
+                        <span class="label">${t.label}</span>
+                        <span class="value">${minutesToTimeStr(t.time)}</span>
+                    `;
                 }
+
+                rowsContainer.appendChild(row);
             });
+
+            return rowsContainer;
+        }
+
+        // Swap in freshly built rows after an inline time edit
+        function rebuildTimeRows(timer) {
+            timer.el.querySelector('.time-rows').replaceWith(buildTimeRows(timer));
         }
 
         // Render the add-timer placeholder card
@@ -897,7 +1116,7 @@
                         <div class="add-label">Add Timer</div>
                     </div>
                 `;
-                addCard.addEventListener('click', showSetup);
+                addCard.addEventListener('click', () => showSetup());
                 cardsGrid.appendChild(addCard);
             }
         }
@@ -909,13 +1128,20 @@
                 return;
             }
 
+            const opts = resolveOptions(data);
+
             const timer = {
                 id: nextId++,
                 board: data.board,
                 name: data.name,
                 durationMin: data.durationMin,
                 startMin: data.startMin,
-                times: computeTimes(data.board, data.startMin, data.durationMin),
+                show30Min: data.show30Min,
+                show5Min: data.show5Min,
+                color: data.color,
+                showExtraTime: opts.showExtra,
+                extraPercent: opts.extraPercent,
+                times: computeTimes(data.board, data.startMin, data.durationMin, opts),
                 el: null
             };
 
@@ -946,6 +1172,34 @@
             if (timers.length === 1) {
                 showToast();
             }
+
+            markDirty();
+        }
+
+        // Update an existing timer's details and rebuild its card in place
+        function updateTimer(id, data) {
+            const timer = timers.find(t => t.id === id);
+            if (!timer) return;
+
+            const opts = resolveOptions(data);
+
+            timer.board = data.board;
+            timer.name = data.name;
+            timer.durationMin = data.durationMin;
+            timer.startMin = data.startMin;
+            timer.show30Min = data.show30Min;
+            timer.show5Min = data.show5Min;
+            timer.color = data.color;
+            timer.showExtraTime = opts.showExtra;
+            timer.extraPercent = opts.extraPercent;
+            timer.times = computeTimes(data.board, data.startMin, data.durationMin, opts);
+
+            const oldEl = timer.el;
+            const newCard = buildCard(timer);
+            oldEl.replaceWith(newCard);
+
+            setupOverlay.classList.add('hidden');
+            markDirty();
         }
 
         // Toast popup
@@ -975,6 +1229,9 @@
                 tickInterval = null;
                 timerView.classList.remove('active');
                 showSetup();
+                markSaved();
+            } else {
+                markDirty();
             }
         }
 
@@ -988,8 +1245,9 @@
             const currentSec = nowSeconds();
 
             timers.forEach(timer => {
-                const isIB = timer.board === 'IB';
-                const highlightClass = isIB ? 'highlighted-ib' : 'highlighted-igcse';
+                const highlightClass = timer.board === 'IB' ? 'highlighted-ib'
+                    : timer.board === 'IGCSE' ? 'highlighted-igcse'
+                    : 'highlighted-custom';
                 const rowsContainer = timer.el.querySelector('.time-rows');
                 const rows = rowsContainer.children;
 
@@ -1018,9 +1276,9 @@
 
                 // Highlight: the milestone row during its minute, then the remaining time
                 timer.times.forEach((t, i) => {
-                    if (rows[i]) rows[i].classList.remove('highlighted-ib', 'highlighted-igcse');
+                    if (rows[i]) rows[i].classList.remove('highlighted-ib', 'highlighted-igcse', 'highlighted-custom');
                 });
-                countdownEl.classList.remove('highlighted-ib', 'highlighted-igcse');
+                countdownEl.classList.remove('highlighted-ib', 'highlighted-igcse', 'highlighted-custom');
 
                 if (activeMilestoneIdx >= 0) {
                     // A milestone is being hit this minute — highlight its row
@@ -1084,22 +1342,66 @@
             const durationMin = hours * 60 + minutes;
 
             if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(startTimeInput.value)) {
-                alert('Please enter a valid start time (24-hour, HH:MM, 00:00 to 23:59).');
+                alert(board === 'IB'
+                    ? 'Please enter a valid reading time (24-hour, HH:MM, 00:00 to 23:59).'
+                    : 'Please enter a valid start time (24-hour, HH:MM, 00:00 to 23:59).');
                 return;
             }
-            const startMin = timeStrToMinutes(startTimeInput.value);
+            const enteredMin = timeStrToMinutes(startTimeInput.value);
+            // For IB the field is the reading time; the exam itself starts 5 min later
+            const startMin = board === 'IB' ? enteredMin + 5 : enteredMin;
 
             if (durationMin <= 0) {
                 alert('Please enter a valid duration.');
                 return;
             }
 
-            addTimer({ board, name, durationMin, startMin });
+            const extraPercent = parseInt(extraPercentInput.value);
+            if (extraTimeEnabledInput.checked && !(extraPercent > 0)) {
+                alert('Please enter an extra time percentage greater than 0.');
+                return;
+            }
+
+            const data = { board, name, durationMin, startMin };
+            data.showExtraTime = extraTimeEnabledInput.checked;
+            data.extraPercent = extraPercent;
+            if (board === 'Custom') {
+                data.show30Min = custom30Input.checked;
+                data.show5Min = custom5Input.checked;
+                data.color = customColorInput.value;
+            }
+
+            if (editingTimerId !== null) {
+                updateTimer(editingTimerId, data);
+                editingTimerId = null;
+            } else {
+                addTimer(data);
+            }
         });
+
+        // Keep the Custom-only fields and the time field's label in sync with the board selection
+        examBoardSelect.addEventListener('change', () => {
+            updateCustomFieldsVisibility();
+            updateStartTimeLabel();
+        });
+
+        // Grey out the percentage field while extra time is switched off
+        extraTimeEnabledInput.addEventListener('change', updateExtraPercentState);
+
+        // Auto-insert the ":" while typing a time (e.g. 1005 -> 10:05)
+        function autoColon(e) {
+            let digits = e.target.value.replace(/\D/g, '').slice(0, 4);
+            if (digits.length >= 3) {
+                digits = digits.slice(0, 2) + ':' + digits.slice(2);
+            }
+            e.target.value = digits;
+        }
+        startTimeInput.addEventListener('input', autoColon);
 
         // Cancel button (go back to timer view)
         btnCancel.addEventListener('click', () => {
             setupOverlay.classList.add('hidden');
+            editingTimerId = null;
         });
 
         // Load button
@@ -1132,6 +1434,9 @@
                     if (timers.length === 0) {
                         alert('No valid timers found in file.');
                         showSetup();
+                    } else {
+                        // Freshly loaded timers already match the file on disk
+                        markSaved();
                     }
                 } catch {
                     alert('Could not read timer file.');
@@ -1144,12 +1449,17 @@
         // Download button
         document.getElementById('btn-download').addEventListener('click', () => {
             if (timers.length === 0) return;
-            const saveData = timers.map(t => ({
-                board: t.board,
-                name: t.name,
-                durationMin: t.durationMin,
-                startMin: t.startMin
-            }));
+            const saveData = timers.map(t => {
+                const entry = { board: t.board, name: t.name, durationMin: t.durationMin, startMin: t.startMin };
+                entry.showExtraTime = t.showExtraTime;
+                entry.extraPercent = t.extraPercent;
+                if (t.board === 'Custom') {
+                    entry.show30Min = t.show30Min;
+                    entry.show5Min = t.show5Min;
+                    entry.color = t.color;
+                }
+                return entry;
+            });
             const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1157,6 +1467,7 @@
             a.download = 'timer.json';
             a.click();
             URL.revokeObjectURL(url);
+            markSaved();
         });
 
         // --- Drag and drop reordering ---
@@ -1215,6 +1526,7 @@
             ).filter(Boolean);
             timers.length = 0;
             timers.push(...newOrder);
+            markDirty();
         });
 
         // Toast dismiss
