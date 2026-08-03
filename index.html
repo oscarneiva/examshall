@@ -61,36 +61,51 @@
 
         .landing-buttons {
             display: flex;
-            flex-direction: column;
-            gap: 16px;
-            max-width: 360px;
-            margin: 0 auto;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 32px;
+            flex-wrap: wrap;
         }
 
         .landing-btn {
-            display: block;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            width: 160px;
+            padding: 26px 12px;
+            border-radius: 14px;
+            border: 2px solid transparent;
             text-decoration: none;
-            background: #000;
-            color: #fff;
-            border-radius: 8px;
-            padding: 20px 28px;
-            font-size: 1.25rem;
+            color: #000;
+            font-size: 1.1rem;
             font-weight: 600;
-            transition: opacity 0.2s, transform 0.1s;
+            transition: background 0.2s, border-color 0.2s, transform 0.1s;
+        }
+
+        .landing-btn svg {
+            width: 72px;
+            height: 72px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.7;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
 
         .landing-btn:hover {
-            opacity: 0.85;
+            background: #f2f2f2;
+            border-color: #000;
         }
 
         .landing-btn:active {
             transform: translateY(1px);
         }
 
-        .landing-btn.secondary {
-            background: #fff;
-            color: #000;
-            border: 2px solid #000;
+        .landing-btn:focus-visible {
+            outline: 2px solid #000;
+            outline-offset: 3px;
         }
 
         /* GitHub link */
@@ -136,9 +151,19 @@
                 margin-bottom: 36px;
             }
 
+            .landing-buttons {
+                gap: 16px;
+            }
+
             .landing-btn {
-                font-size: 1.1rem;
-                padding: 18px 22px;
+                font-size: 1rem;
+                width: 140px;
+                padding: 20px 10px;
+            }
+
+            .landing-btn svg {
+                width: 54px;
+                height: 54px;
             }
 
             .github-link svg {
@@ -170,10 +195,23 @@
 
     <div class="landing">
         <h1>Exams Hall</h1>
-        <p class="tagline">Exam timing and invigilation tools</p>
         <div class="landing-buttons">
-            <a class="landing-btn" href="timer.html">Exam Timer</a>
-            <a class="landing-btn secondary" href="incident-log.html">Incident Log Sheet</a>
+            <a class="landing-btn" href="timer.html">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 2h14M5 22h14"/>
+                    <path d="M7 2v3.3c0 .6.2 1.1.6 1.5L12 11l4.4-4.2c.4-.4.6-.9.6-1.5V2"/>
+                    <path d="M7 22v-3.3c0-.6.2-1.1.6-1.5L12 13l4.4 4.2c.4.4.6.9.6 1.5V22"/>
+                </svg>
+                <span>Timer</span>
+            </a>
+            <a class="landing-btn" href="incident-log.html">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/>
+                    <path d="M14 3v5h5"/>
+                    <path d="M9 13h6M9 17h4"/>
+                </svg>
+                <span>Incident Log</span>
+            </a>
         </div>
     </div>
 

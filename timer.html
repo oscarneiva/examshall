@@ -43,6 +43,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 24px 16px;
             z-index: 100;
         }
 
@@ -50,13 +51,18 @@
             display: none;
         }
 
+        /* The card never grows past the viewport: it scrolls inside itself instead */
         .setup-card {
             background: #fff;
             border: 1px solid #ddd;
             border-radius: 12px;
             padding: 40px;
             width: 440px;
-            max-width: 90vw;
+            max-width: 100%;
+            max-height: calc(100vh - 48px);
+            max-height: calc(100dvh - 48px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
 
@@ -149,6 +155,59 @@
             background: #f5f5f5;
             color: #aaa;
             cursor: not-allowed;
+        }
+
+        /* Collapsible "Show more" area for the optional warning / extra-time settings */
+        .more-options {
+            margin-bottom: 18px;
+        }
+
+        .more-options summary {
+            list-style: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.95rem;
+            color: #555;
+            cursor: pointer;
+            padding: 4px 0;
+            user-select: none;
+        }
+
+        .more-options summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .more-options summary:hover {
+            color: #000;
+        }
+
+        .more-options summary::after {
+            content: '▾';
+            font-size: 1.20rem;
+            line-height: 1;
+            transition: transform 0.2s;
+        }
+
+        .more-options[open] summary::after {
+            transform: rotate(180deg);
+        }
+
+        .more-options summary .more-label-less,
+        .more-options[open] summary .more-label-more {
+            display: none;
+        }
+
+        .more-options[open] summary .more-label-less {
+            display: inline;
+        }
+
+        .more-options-body {
+            padding-top: 12px;
+        }
+
+        .more-options-body .form-group:last-child {
+            margin-bottom: 0;
         }
 
         .duration-row {
@@ -473,6 +532,7 @@
             font-size: 2.0rem;
             font-weight: 700;
             margin-bottom: 4px;
+            text-align: center;
         }
 
         .exam-card.ib .countdown-status {
@@ -714,6 +774,58 @@
                 height: 34px;
             }
         }
+
+        /* Tighten the setup form on short screens so it still fits without scrolling */
+        @media (max-height: 800px) {
+            #setup-overlay {
+                padding: 16px 12px;
+            }
+
+            .setup-card {
+                padding: 24px;
+                max-height: calc(100vh - 32px);
+                max-height: calc(100dvh - 32px);
+            }
+
+            .setup-card h1 {
+                font-size: 1.4rem;
+                margin-bottom: 18px;
+            }
+
+            .form-group {
+                margin-bottom: 10px;
+            }
+
+            .form-group label {
+                margin-bottom: 4px;
+            }
+
+            .form-group select,
+            .form-group input {
+                padding: 8px 12px;
+                font-size: 1rem;
+            }
+
+            .form-group input[type="color"] {
+                height: 38px;
+            }
+
+            .more-options {
+                margin-bottom: 10px;
+            }
+
+            .more-options-body {
+                padding-top: 8px;
+            }
+
+            .btn {
+                padding: 10px 24px;
+            }
+
+            .btn-primary {
+                margin-top: 6px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -722,17 +834,12 @@
         <div class="setup-card">
             <h1 id="setup-title">Exam Timer</h1>
             <div class="form-group">
-                <label for="exam-board">Exam Board</label>
+                <label for="exam-board">Type</label>
                 <select id="exam-board">
+                    <option value="Custom">Custom</option>
                     <option value="IB">IB</option>
                     <option value="IGCSE">IGCSE</option>
-                    <option value="Custom">Custom</option>
                 </select>
-            </div>
-            <div class="form-group" id="custom-warnings-group">
-                <label>Warnings</label>
-                <label class="checkbox-inline"><input type="checkbox" id="custom-30min" checked> 30 min warning</label>
-                <label class="checkbox-inline"><input type="checkbox" id="custom-5min" checked> 5 min warning</label>
             </div>
             <div class="form-group" id="custom-color-group">
                 <label for="custom-color">Border Color</label>
@@ -746,23 +853,33 @@
                 <label>Duration</label>
                 <div class="duration-row">
                     <input type="number" id="duration-hours" min="0" max="5" placeholder="Hours" value="1">
-                    <input type="number" id="duration-minutes" min="0" max="59" placeholder="Minutes" value="30">
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Extra Time</label>
-                <div class="extra-time-row">
-                    <label class="checkbox-inline"><input type="checkbox" id="extra-time-enabled" checked> Show extra time</label>
-                    <span class="extra-percent">
-                        <input type="number" id="extra-percent" min="1" max="200" value="25">
-                        <span>%</span>
-                    </span>
+                    <input type="number" id="duration-minutes" min="0" max="59" placeholder="Minutes" value="00">
                 </div>
             </div>
             <div class="form-group">
                 <label for="start-time" id="start-time-label">Start Time (24-hour, HH:MM)</label>
                 <input type="text" id="start-time" inputmode="numeric" maxlength="5" placeholder="HH:MM" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" lang="en-GB">
             </div>
+            <details class="more-options" id="more-options">
+                <summary><span class="more-label-more">More options</span><span class="more-label-less">Show less</span></summary>
+                <div class="more-options-body">
+                    <div class="form-group" id="custom-warnings-group">
+                        <label>Warnings</label>
+                        <label class="checkbox-inline"><input type="checkbox" id="custom-30min"> 30 min warning</label>
+                        <label class="checkbox-inline"><input type="checkbox" id="custom-5min"> 5 min warning</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Extra Time</label>
+                        <div class="extra-time-row">
+                            <label class="checkbox-inline"><input type="checkbox" id="extra-time-enabled"> Show extra time</label>
+                            <span class="extra-percent">
+                                <input type="number" id="extra-percent" min="1" max="200" value="25">
+                                <span>%</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </details>
             <button class="btn btn-primary" id="btn-start">Add Timer</button>
             <button class="btn btn-primary" id="btn-load">Load Timer</button>
             <button class="setup-cancel" id="btn-cancel">Cancel</button>
@@ -808,7 +925,7 @@
         let editingTimerId = null; // id of the timer being edited via the setup overlay, or null when adding
         let hasUnsavedChanges = false;
         const MAX_TIMERS = 16;
-        const DEFAULT_CUSTOM_COLOR = '#7c3aed';
+        const DEFAULT_CUSTOM_COLOR = '#FF0000';
         const DEFAULT_EXTRA_PERCENT = 25;
 
         // DOM refs
@@ -845,6 +962,7 @@
         const customColorInput = document.getElementById('custom-color');
         const extraTimeEnabledInput = document.getElementById('extra-time-enabled');
         const extraPercentInput = document.getElementById('extra-percent');
+        const moreOptions = document.getElementById('more-options');
 
         // Helpers
         function pad(n) {
@@ -945,14 +1063,14 @@
             } else {
                 examNameInput.value = '';
                 durationHoursInput.value = '1';
-                durationMinutesInput.value = '30';
+                durationMinutesInput.value = '00';
                 const now = new Date();
                 startTimeInput.value = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-                examBoardSelect.value = 'IB';
-                custom30Input.checked = true;
-                custom5Input.checked = true;
+                examBoardSelect.value = 'Custom';
+                custom30Input.checked = false;
+                custom5Input.checked = false;
                 customColorInput.value = DEFAULT_CUSTOM_COLOR;
-                extraTimeEnabledInput.checked = true;
+                extraTimeEnabledInput.checked = false;
                 extraPercentInput.value = DEFAULT_EXTRA_PERCENT;
             }
 
@@ -962,6 +1080,9 @@
             updateCustomFieldsVisibility();
             updateStartTimeLabel();
             updateExtraPercentState();
+
+            // Start collapsed, but open the extra settings when a timer already uses one
+            moreOptions.open = !!(timer && (custom30Input.checked || custom5Input.checked || extraTimeEnabledInput.checked));
 
             // Show cancel button if timers already exist (or always, when editing)
             btnCancel.style.display = (timer || timers.length > 0) ? 'block' : 'none';

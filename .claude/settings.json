@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/oscarneiva/Desktop/examshall diff --stat)",
+      "Bash(ls \"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" 2>/dev/null && echo FOUND || echo NOCHROME)",
+      "Read(//Applications/Google Chrome.app/Contents/MacOS/**)",
+      "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --hide-scrollbars --screenshot=shot-720.png --window-size=1280,720 file:///Users/oscarneiva/Desktop/examshall/timer.html)",
+      "Bash(\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --hide-scrollbars --screenshot=shot-600.png --window-size=1024,600 file:///Users/oscarneiva/Desktop/examshall/timer.html)"
+    ]
+  }
+}
