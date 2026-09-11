@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Create exam or classroom seating plans. Enter a grid size and student names, drag cards to arrange seats and give them colors, then export the plan as an Excel (.xlsx) file with the colors kept.">
+    <link rel="canonical" href="https://examshall.com/seating-setter.html">
+    <meta name="theme-color" content="#000000">
+
+    <!-- Open Graph / link previews -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Exams Hall">
+    <meta property="og:url" content="https://examshall.com/seating-setter.html">
+    <meta property="og:title" content="Seating Setter - Exams Hall">
+    <meta property="og:description" content="Create exam or classroom seating plans. Enter a grid size and student names, drag cards to arrange seats and give them colors, then export the plan as an Excel (.xlsx) file with the colors kept.">
+    <meta property="og:image" content="https://examshall.com/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Exams Hall">
+    <meta name="twitter:card" content="summary_large_image">
+    <title>Seating Setter - Exams Hall</title>
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #fff;
+            color: #000;
+            min-height: 100vh;
+        }
+
+        /* Setup overlay */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+            z-index: 100;
+        }
+
+        .overlay.hidden {
+            display: none;
+        }
+
+        .setup-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 40px;
+            width: 440px;
+            max-width: 100%;
+            max-height: calc(100vh - 48px);
+            max-height: calc(100dvh - 48px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .setup-card h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin-bottom: 28px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1.05rem;
+            font-family: inherit;
+            color: #000;
+            background: #fff;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 110px;
+            line-height: 1.4;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: #555;
+        }
+
+        .form-hint {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 6px;
+        }
+
+        .grid-size-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .grid-size-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.05rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.85;
+        }
+
+        .btn-primary {
+            background: #000;
+            color: #fff;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .btn-secondary {
+            background: #fff;
+            color: #000;
+            border: 1px solid #ccc;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        /* Plan view */
+        #plan-view {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+            padding: 70px 40px 90px;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #plan-view.active {
+            display: flex;
+        }
+
+        .plan-wrap {
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .sheet-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .sheet-title {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .sheet-subtitle {
+            font-size: 1.05rem;
+            color: #777;
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        /* Pencil button for editing the grid size / names */
+        .meta-edit {
+            background: none;
+            border: none;
+            color: #bbb;
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px;
+        }
+
+        .meta-edit:hover {
+            color: #000;
+        }
+
+        .meta-edit svg {
+            width: 20px;
+            height: 20px;
+            display: block;
+        }
+
+        /* Seating grid */
+        .seat-grid {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .seat-card {
+            position: relative;
+            aspect-ratio: 1;
+            border: 2px solid #e2e2e2;
+            border-radius: 10px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 10px 6px;
+            cursor: grab;
+            user-select: none;
+            transition: background 0.15s, border-color 0.15s, transform 0.1s;
+        }
+
+        .seat-card.has-name {
+            background: #fee2e2;
+            border-color: #f3a8a8;
+        }
+
+        .seat-card:hover {
+            border-color: #999;
+        }
+
+        .seat-card.dragging {
+            opacity: 0.35;
+        }
+
+        .seat-card.drag-over {
+            border-color: #000;
+            border-style: dashed;
+            transform: scale(1.04);
+        }
+
+        .seat-card {
+            --fg-muted: #bbb;
+        }
+
+        .seat-num {
+            position: absolute;
+            top: 6px;
+            left: 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--fg-muted);
+        }
+
+        /* Small color-picker trigger, top-right of a named card */
+        .seat-color-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: none;
+            border: none;
+            color: var(--fg-muted);
+            cursor: pointer;
+            line-height: 0;
+            padding: 3px;
+            border-radius: 4px;
+            transition: opacity 0.15s, background 0.15s;
+        }
+
+        .seat-color-btn:hover {
+            background: rgba(0, 0, 0, 0.08);
+            opacity: 0.85;
+        }
+
+        .seat-color-btn svg {
+            width: 15px;
+            height: 15px;
+            display: block;
+        }
+
+        /* Hidden native color input the button triggers */
+        .seat-color-input {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            border: none;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .seat-name {
+            font-size: 1rem;
+            font-weight: 600;
+            line-height: 1.25;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .seat-input {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid #999;
+            background: transparent;
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: inherit;
+            color: #000;
+            outline: none;
+            padding: 2px 0;
+        }
+
+        /* Fixed bottom bar, matching the timer's Save Timer button */
+        .bottom-controls {
+            position: fixed;
+            bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .bottom-controls .btn {
+            width: auto;
+        }
+
+        /* GitHub link */
+        .github-link {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: #bbb;
+            line-height: 0;
+            z-index: 150;
+            transition: color 0.2s;
+        }
+
+        .github-link:hover {
+            color: #000;
+        }
+
+        .github-link svg {
+            width: 40px;
+            height: 40px;
+            fill: currentColor;
+        }
+
+        /* Responsive: tablets (iPad) */
+        @media (max-width: 820px) {
+            #plan-view {
+                padding: 50px 24px 90px;
+            }
+
+            .sheet-title {
+                font-size: 1.7rem;
+            }
+
+            .seat-grid {
+                gap: 8px;
+            }
+        }
+
+        /* Responsive: phones */
+        @media (max-width: 560px) {
+            #plan-view {
+                padding: 40px 14px 160px;
+            }
+
+            .bottom-controls {
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .sheet-title {
+                font-size: 1.5rem;
+            }
+
+            .sheet-subtitle {
+                font-size: 0.9rem;
+                margin-bottom: 20px;
+            }
+
+            .setup-card {
+                padding: 28px 24px;
+            }
+
+            .seat-name {
+                font-size: 0.8rem;
+            }
+
+            .seat-num {
+                font-size: 0.6rem;
+            }
+
+            .github-link svg {
+                width: 34px;
+                height: 34px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Setup overlay -->
+    <div class="overlay" id="setup-overlay">
+        <div class="setup-card">
+            <h1 id="setup-title">Create Seating Plan</h1>
+            <div class="grid-size-row">
+                <div class="form-group">
+                    <label for="grid-rows">Rows</label>
+                    <input type="number" id="grid-rows" min="1" max="20" value="4" inputmode="numeric">
+                </div>
+                <div class="form-group">
+                    <label for="grid-cols">Columns</label>
+                    <input type="number" id="grid-cols" min="1" max="20" value="4" inputmode="numeric">
+                </div>
+            </div>
+            <div class="form-group" style="margin-top: 18px;">
+                <label for="student-names">Student Names</label>
+                <textarea id="student-names" placeholder="One name per line (or comma-separated)"></textarea>
+                <p class="form-hint">Fewer names than seats leaves the rest blank. Extra names beyond the grid size are left out.</p>
+            </div>
+            <button class="btn btn-primary" id="btn-generate">Generate Seating Plan</button>
+            <button class="btn btn-secondary" id="btn-setup-cancel" style="display: none;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Plan view -->
+    <div id="plan-view">
+        <div class="plan-wrap">
+            <div class="sheet-header">
+                <h1 class="sheet-title">Seating Setter</h1>
+                <button class="meta-edit" id="btn-edit-plan" title="Edit grid size and names" aria-label="Edit grid size and names">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                    </svg>
+                </button>
+            </div>
+            <p class="sheet-subtitle">Drag a card onto another to swap seats, or click a card to type a name</p>
+
+            <div class="seat-grid" id="seat-grid"></div>
+        </div>
+
+        <div class="bottom-controls">
+            <button class="btn btn-primary" id="btn-download">Export XLSX</button>
+            <button class="btn btn-primary" id="btn-download-image">Export Image</button>
+        </div>
+    </div>
+
+    <!-- GitHub link -->
+    <a class="github-link" href="https://github.com/oscarneiva/examshall" target="_blank" rel="noopener noreferrer" aria-label="GitHub profile" title="GitHub">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+    </a>
+
+    <script>
+        // State
+        let rows = 4;
+        let cols = 4;
+        let seats = []; // flat array, length rows*cols, '' = empty seat
+        let seatColors = []; // flat array, same length as seats; null = no custom color (default light red)
+
+        // DOM refs
+        const setupOverlay = document.getElementById('setup-overlay');
+        const planView = document.getElementById('plan-view');
+        const setupTitle = document.getElementById('setup-title');
+        const rowsInput = document.getElementById('grid-rows');
+        const colsInput = document.getElementById('grid-cols');
+        const namesInput = document.getElementById('student-names');
+        const btnGenerate = document.getElementById('btn-generate');
+        const btnSetupCancel = document.getElementById('btn-setup-cancel');
+        const seatGrid = document.getElementById('seat-grid');
+
+        // Split on newlines and/or commas, trim, drop blanks
+        function parseNames(text) {
+            return text.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+        }
+
+        // Open the setup overlay: pass true to edit an existing plan's grid size / names
+        function openSetup(isEdit) {
+            if (isEdit) {
+                rowsInput.value = rows;
+                colsInput.value = cols;
+                namesInput.value = seats.filter(Boolean).join('\n');
+                setupTitle.textContent = 'Edit Seating Plan';
+                btnGenerate.textContent = 'Save Changes';
+                btnSetupCancel.style.display = 'block';
+            } else {
+                rowsInput.value = 4;
+                colsInput.value = 4;
+                namesInput.value = '';
+                setupTitle.textContent = 'Create Seating Plan';
+                btnGenerate.textContent = 'Generate Seating Plan';
+                btnSetupCancel.style.display = 'none';
+            }
+            setupOverlay.classList.remove('hidden');
+        }
+
+        btnGenerate.addEventListener('click', () => {
+            const r = parseInt(rowsInput.value, 10);
+            const c = parseInt(colsInput.value, 10);
+
+            if (!r || !c || r < 1 || c < 1) {
+                alert('Please enter a valid number of rows and columns (at least 1).');
+                return;
+            }
+
+            const totalSeats = r * c;
+            if (totalSeats > 400) {
+                alert('That grid is too large. Please keep it to 400 seats or fewer.');
+                return;
+            }
+
+            const names = parseNames(namesInput.value);
+            if (names.length > totalSeats) {
+                alert(`You entered ${names.length} names but the grid only has ${totalSeats} seat${totalSeats === 1 ? '' : 's'}. The first ${totalSeats} will be placed; the rest are left out.`);
+            }
+
+            rows = r;
+            cols = c;
+            seats = new Array(totalSeats).fill('');
+            seatColors = new Array(totalSeats).fill(null);
+            names.slice(0, totalSeats).forEach((n, i) => { seats[i] = n; });
+
+            renderGrid();
+            setupOverlay.classList.add('hidden');
+            planView.classList.add('active');
+        });
+
+        document.getElementById('btn-edit-plan').addEventListener('click', () => openSetup(true));
+
+        btnSetupCancel.addEventListener('click', () => {
+            setupOverlay.classList.add('hidden');
+        });
+
+        // Render the seating grid
+        function renderGrid() {
+            seatGrid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+            seatGrid.innerHTML = '';
+            seats.forEach((name, i) => {
+                seatGrid.appendChild(buildSeatCard(name, i));
+            });
+        }
+
+        // Pick black or white text so it stays readable on any chosen background
+        function readableTextColor(hex) {
+            const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+            if (!m) return '#000';
+            const [r, g, b] = m.slice(1).map(h => parseInt(h, 16));
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminance > 0.6 ? '#000' : '#fff';
+        }
+
+        function buildSeatCard(name, index) {
+            const card = document.createElement('div');
+            const color = seatColors[index];
+            card.className = 'seat-card' + (name ? ' has-name' : '');
+            card.draggable = true;
+            card.dataset.index = index;
+
+            // A custom color overrides the default light red / white background
+            if (name && color) {
+                const textColor = readableTextColor(color);
+                card.style.background = color;
+                card.style.borderColor = color;
+                card.style.color = textColor;
+                card.style.setProperty('--fg-muted', textColor === '#fff' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.35)');
+            }
+
+            // Prevent dragging from hijacking clicks on buttons/inputs inside the card
+            card.addEventListener('mousedown', (e) => {
+                if (e.target.closest('button, input')) card.draggable = false;
+            });
+            card.addEventListener('mouseup', () => { card.draggable = true; });
+
+            const seatNum = document.createElement('span');
+            seatNum.className = 'seat-num';
+            seatNum.textContent = index + 1;
+            card.appendChild(seatNum);
+
+            // Color tool (top-right) - only for seats with a student assigned
+            if (name) {
+                const colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.className = 'seat-color-input';
+                colorInput.tabIndex = -1;
+                colorInput.setAttribute('aria-hidden', 'true');
+                colorInput.value = color || '#fee2e2';
+
+                const colorBtn = document.createElement('button');
+                colorBtn.type = 'button';
+                colorBtn.className = 'seat-color-btn';
+                colorBtn.title = 'Set card color';
+                colorBtn.setAttribute('aria-label', 'Set card color');
+                colorBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.8 2-1.8 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.1-1.3.3-.4.8-.4 1.3-.4H16a4 4 0 0 0 4-4c0-5-3.6-9-8-9Z"/>
+                        <circle cx="7.3" cy="10.3" r="1.1" fill="currentColor" stroke="none"/>
+                        <circle cx="11" cy="7" r="1.1" fill="currentColor" stroke="none"/>
+                        <circle cx="15.3" cy="8.8" r="1.1" fill="currentColor" stroke="none"/>
+                    </svg>
+                `;
+                colorBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    colorInput.click();
+                });
+
+                colorInput.addEventListener('click', (e) => e.stopPropagation());
+                colorInput.addEventListener('change', (e) => {
+                    e.stopPropagation();
+                    seatColors[index] = e.target.value;
+                    renderGrid();
+                });
+
+                card.appendChild(colorBtn);
+                card.appendChild(colorInput);
+            }
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'seat-name';
+            nameSpan.textContent = name;
+            card.appendChild(nameSpan);
+
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('button, input')) return;
+                editSeat(card, index);
+            });
+
+            return card;
+        }
+
+        // Turn a card's name into an editable text field
+        function editSeat(card, index) {
+            if (card.querySelector('.seat-input')) return;
+            card.draggable = false;
+
+            const nameSpan = card.querySelector('.seat-name');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'seat-input';
+            input.value = seats[index];
+            input.placeholder = 'Empty seat';
+            nameSpan.replaceWith(input);
+            input.focus();
+            input.select();
+
+            function save() {
+                seats[index] = input.value.trim();
+                renderGrid();
+            }
+
+            input.addEventListener('blur', save);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+                if (e.key === 'Escape') {
+                    // Discard the edit: detach the blur handler first, since removing a
+                    // focused input from the DOM (via renderGrid) would otherwise fire
+                    // blur and save the in-progress text anyway.
+                    e.preventDefault();
+                    input.removeEventListener('blur', save);
+                    renderGrid();
+                }
+            });
+        }
+
+        // --- Drag and drop: swap the names of two seats ---
+        let dragIndex = null;
+
+        seatGrid.addEventListener('dragstart', (e) => {
+            const card = e.target.closest('.seat-card');
+            if (!card || card.querySelector('.seat-input')) { e.preventDefault(); return; }
+            dragIndex = Number(card.dataset.index);
+            card.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        seatGrid.addEventListener('dragend', () => {
+            seatGrid.querySelectorAll('.dragging, .drag-over').forEach(el => el.classList.remove('dragging', 'drag-over'));
+            dragIndex = null;
+        });
+
+        seatGrid.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const target = e.target.closest('.seat-card');
+            if (!target) return;
+            seatGrid.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            if (Number(target.dataset.index) !== dragIndex) target.classList.add('drag-over');
+        });
+
+        seatGrid.addEventListener('dragleave', (e) => {
+            const target = e.target.closest('.seat-card');
+            if (target) target.classList.remove('drag-over');
+        });
+
+        seatGrid.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const target = e.target.closest('.seat-card');
+            if (!target || dragIndex === null) return;
+            const dropIndex = Number(target.dataset.index);
+            if (dropIndex === dragIndex) return;
+
+            [seats[dragIndex], seats[dropIndex]] = [seats[dropIndex], seats[dragIndex]];
+            [seatColors[dragIndex], seatColors[dropIndex]] = [seatColors[dropIndex], seatColors[dragIndex]];
+            renderGrid();
+        });
+
+        // --- Export as a genuine .xlsx (OOXML) file ---
+        // An .xlsx is a zip archive of XML parts. With no build step or library allowed
+        // on this site, both pieces are written here by hand: a minimal (stored, i.e.
+        // uncompressed) zip packer below, and the OOXML parts themselves further down.
+
+        const DEFAULT_NAME_FILL = '#fee2e2';
+
+        function xmlEscape(value) {
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // Standard reflected CRC-32 (polynomial 0xEDB88320), required by the zip format
+        // even for uncompressed entries.
+        function crc32(bytes) {
+            let crc = ~0;
+            for (let i = 0; i < bytes.length; i++) {
+                crc ^= bytes[i];
+                for (let j = 0; j < 8; j++) {
+                    crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
+                }
+            }
+            return (~crc) >>> 0;
+        }
+
+        // Pack { name, data(Uint8Array) } entries into a zip Blob using the STORED
+        // (uncompressed) method - simpler to write correctly than DEFLATE, and every
+        // zip reader (Excel included) supports it.
+        function buildZip(files) {
+            const encoder = new TextEncoder();
+            const parts = [];
+            const centralParts = [];
+            let offset = 0;
+            const dosDate = 0x21; // 1 Jan 1980 - arbitrary but valid DOS date
+
+            files.forEach(file => {
+                const nameBytes = encoder.encode(file.name);
+                const data = file.data;
+                const crc = crc32(data);
+                const size = data.length;
+
+                const local = new Uint8Array(30 + nameBytes.length);
+                const lv = new DataView(local.buffer);
+                lv.setUint32(0, 0x04034b50, true);
+                lv.setUint16(4, 20, true);
+                lv.setUint16(6, 0, true);
+                lv.setUint16(8, 0, true); // compression method: stored
+                lv.setUint16(10, 0, true);
+                lv.setUint16(12, dosDate, true);
+                lv.setUint32(14, crc, true);
+                lv.setUint32(18, size, true);
+                lv.setUint32(22, size, true);
+                lv.setUint16(26, nameBytes.length, true);
+                lv.setUint16(28, 0, true);
+                local.set(nameBytes, 30);
+                parts.push(local, data);
+
+                const central = new Uint8Array(46 + nameBytes.length);
+                const cv = new DataView(central.buffer);
+                cv.setUint32(0, 0x02014b50, true);
+                cv.setUint16(4, 20, true);
+                cv.setUint16(6, 20, true);
+                cv.setUint16(8, 0, true);
+                cv.setUint16(10, 0, true);
+                cv.setUint16(12, 0, true);
+                cv.setUint16(14, dosDate, true);
+                cv.setUint32(16, crc, true);
+                cv.setUint32(20, size, true);
+                cv.setUint32(24, size, true);
+                cv.setUint16(28, nameBytes.length, true);
+                cv.setUint16(30, 0, true);
+                cv.setUint16(32, 0, true);
+                cv.setUint16(34, 0, true);
+                cv.setUint16(36, 0, true);
+                cv.setUint32(38, 0, true);
+                cv.setUint32(42, offset, true);
+                central.set(nameBytes, 46);
+                centralParts.push(central);
+
+                offset += local.length + data.length;
+            });
+
+            const centralStart = offset;
+            const centralSize = centralParts.reduce((n, c) => n + c.length, 0);
+
+            const end = new Uint8Array(22);
+            const ev = new DataView(end.buffer);
+            ev.setUint32(0, 0x06054b50, true);
+            ev.setUint16(8, files.length, true);
+            ev.setUint16(10, files.length, true);
+            ev.setUint32(12, centralSize, true);
+            ev.setUint32(16, centralStart, true);
+
+            return new Blob([...parts, ...centralParts, end], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+        }
+
+        // 1-indexed column number -> spreadsheet column letters (1 -> A, 27 -> AA, ...)
+        function colLetters(n) {
+            let s = '';
+            while (n > 0) {
+                const rem = (n - 1) % 26;
+                s = String.fromCharCode(65 + rem) + s;
+                n = Math.floor((n - 1) / 26);
+            }
+            return s;
+        }
+
+        // Build xl/styles.xml pieces: two fonts (black / white text, whichever reads
+        // better on a given fill) and one solid fill + cell style per unique color
+        // actually used on the grid, all as plain hex RGB - no indexed/theme colors.
+        function buildStyles() {
+            const fontsXml =
+                '<font><sz val="11"/><color rgb="FF000000"/><name val="Calibri"/></font>' +
+                '<font><b/><sz val="11"/><color rgb="FF000000"/><name val="Calibri"/></font>' +
+                '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>';
+
+            const fillsXml = [
+                '<fill><patternFill patternType="none"/></fill>',
+                '<fill><patternFill patternType="gray125"/></fill>'
+            ];
+            const fillIndexByColor = new Map();
+
+            const cellXfsXml = ['<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'];
+            const xfIndexByColor = new Map();
+
+            function xfIndexFor(colorHex) {
+                const key = colorHex.toLowerCase();
+                if (xfIndexByColor.has(key)) return xfIndexByColor.get(key);
+
+                let fillIndex = fillIndexByColor.get(key);
+                if (fillIndex === undefined) {
+                    const argb = 'FF' + key.replace('#', '').toUpperCase();
+                    fillIndex = fillsXml.length;
+                    fillsXml.push(`<fill><patternFill patternType="solid"><fgColor rgb="${argb}"/><bgColor rgb="${argb}"/></patternFill></fill>`);
+                    fillIndexByColor.set(key, fillIndex);
+                }
+
+                const fontId = readableTextColor(key) === '#fff' ? 2 : 1;
+                const xfIndex = cellXfsXml.length;
+                cellXfsXml.push(
+                    `<xf numFmtId="0" fontId="${fontId}" fillId="${fillIndex}" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1">` +
+                    '<alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+                );
+                xfIndexByColor.set(key, xfIndex);
+                return xfIndex;
+            }
+
+            return { fontsXml, fillsXml, cellXfsXml, xfIndexFor };
+        }
+
+        function buildXlsxParts() {
+            const styles = buildStyles();
+            const rowsXml = [];
+
+            for (let r = 0; r < rows; r++) {
+                const cellsXml = [];
+                for (let c = 0; c < cols; c++) {
+                    const name = seats[r * cols + c];
+                    if (!name) continue;
+                    const color = seatColors[r * cols + c] || DEFAULT_NAME_FILL;
+                    const xfIndex = styles.xfIndexFor(color);
+                    const ref = colLetters(c + 1) + (r + 1);
+                    cellsXml.push(`<c r="${ref}" s="${xfIndex}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(name)}</t></is></c>`);
+                }
+                rowsXml.push(`<row r="${r + 1}">${cellsXml.join('')}</row>`);
+            }
+
+            const colsXml = Array.from({ length: cols }, (_, i) =>
+                `<col min="${i + 1}" max="${i + 1}" width="16" customWidth="1"/>`
+            ).join('');
+
+            const sheetXml =
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+                '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+                `<cols>${colsXml}</cols>` +
+                `<sheetData>${rowsXml.join('')}</sheetData>` +
+                '</worksheet>';
+
+            const stylesXml =
+                '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+                '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+                `<fonts count="3">${styles.fontsXml}</fonts>` +
+                `<fills count="${styles.fillsXml.length}">${styles.fillsXml.join('')}</fills>` +
+                '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+                '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+                `<cellXfs count="${styles.cellXfsXml.length}">${styles.cellXfsXml.join('')}</cellXfs>` +
+                '</styleSheet>';
+
+            return { sheetXml, stylesXml };
+        }
+
+        const XLSX_CONTENT_TYPES =
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+            '<Default Extension="xml" ContentType="application/xml"/>' +
+            '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+            '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+            '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+            '</Types>';
+
+        const XLSX_ROOT_RELS =
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+            '</Relationships>';
+
+        const XLSX_WORKBOOK =
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+            '<sheets><sheet name="Seating Plan" sheetId="1" r:id="rId1"/></sheets>' +
+            '</workbook>';
+
+        const XLSX_WORKBOOK_RELS =
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+            '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+            '</Relationships>';
+
+        document.getElementById('btn-download').addEventListener('click', () => {
+            if (seats.every(s => !s) && !confirm('This seating plan has no names in it yet. Export an empty grid anyway?')) {
+                return;
+            }
+
+            const { sheetXml, stylesXml } = buildXlsxParts();
+            const encoder = new TextEncoder();
+            const files = [
+                { name: '[Content_Types].xml', data: encoder.encode(XLSX_CONTENT_TYPES) },
+                { name: '_rels/.rels', data: encoder.encode(XLSX_ROOT_RELS) },
+                { name: 'xl/workbook.xml', data: encoder.encode(XLSX_WORKBOOK) },
+                { name: 'xl/_rels/workbook.xml.rels', data: encoder.encode(XLSX_WORKBOOK_RELS) },
+                { name: 'xl/styles.xml', data: encoder.encode(stylesXml) },
+                { name: 'xl/worksheets/sheet1.xml', data: encoder.encode(sheetXml) }
+            ];
+
+            const blob = buildZip(files);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `seating-plan-${rows}x${cols}.xlsx`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // --- Export as an image (PNG) ---
+        // Redraws the grid on a <canvas> rather than screenshotting the live DOM, so no
+        // html2canvas-style library is needed - matching the rest of the card's own look
+        // (colors, borders, seat numbers) by hand.
+
+        function roundedRectPath(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+        }
+
+        // Word-wrap text to fit maxWidth, capping at maxLines (last line gets an ellipsis
+        // if there's more); falls back to a hard character break for a single overlong word.
+        function wrapText(ctx, text, maxWidth, maxLines) {
+            const words = text.split(/\s+/).filter(Boolean);
+            const lines = [];
+            let current = '';
+
+            words.forEach(word => {
+                const candidate = current ? current + ' ' + word : word;
+                if (ctx.measureText(candidate).width <= maxWidth || !current) {
+                    if (ctx.measureText(candidate).width <= maxWidth) {
+                        current = candidate;
+                        return;
+                    }
+                }
+                if (current) lines.push(current);
+                if (ctx.measureText(word).width > maxWidth) {
+                    let piece = '';
+                    for (const ch of word) {
+                        const test = piece + ch;
+                        if (ctx.measureText(test).width > maxWidth && piece) {
+                            lines.push(piece);
+                            piece = ch;
+                        } else {
+                            piece = test;
+                        }
+                    }
+                    current = piece;
+                } else {
+                    current = word;
+                }
+            });
+            if (current) lines.push(current);
+
+            if (lines.length > maxLines) {
+                const kept = lines.slice(0, maxLines);
+                let last = kept[maxLines - 1];
+                while (last.length > 1 && ctx.measureText(last + '…').width > maxWidth) {
+                    last = last.slice(0, -1);
+                }
+                kept[maxLines - 1] = last + '…';
+                return kept;
+            }
+            return lines;
+        }
+
+        function renderPlanCanvas() {
+            const cellSize = 130;
+            const gap = 12;
+            const padding = 20;
+            const scale = 2; // render at 2x for a crisp image
+
+            const width = cols * cellSize + (cols - 1) * gap + padding * 2;
+            const height = rows * cellSize + (rows - 1) * gap + padding * 2;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width * scale;
+            canvas.height = height * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(scale, scale);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const index = r * cols + c;
+                    const name = seats[index];
+                    const customColor = name ? seatColors[index] : null;
+                    const x = padding + c * (cellSize + gap);
+                    const y = padding + r * (cellSize + gap);
+
+                    let fill = '#ffffff';
+                    let border = '#e2e2e2';
+                    if (name) {
+                        fill = customColor || DEFAULT_NAME_FILL;
+                        border = customColor || '#f3a8a8';
+                    }
+
+                    roundedRectPath(ctx, x, y, cellSize, cellSize, 10);
+                    ctx.fillStyle = fill;
+                    ctx.fill();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = border;
+                    ctx.stroke();
+
+                    // Seat number, top-left - matches the muted look on the live card
+                    ctx.fillStyle = customColor
+                        ? (readableTextColor(customColor) === '#fff' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.35)')
+                        : '#bbbbbb';
+                    ctx.font = '600 11px "Segoe UI", sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(String(index + 1), x + 8, y + 6);
+
+                    if (name) {
+                        ctx.save();
+                        roundedRectPath(ctx, x, y, cellSize, cellSize, 10);
+                        ctx.clip();
+
+                        ctx.fillStyle = customColor ? readableTextColor(customColor) : '#000000';
+                        ctx.font = '700 15px "Segoe UI", sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+
+                        const maxWidth = cellSize - 20;
+                        const lineHeight = 18;
+                        const lines = wrapText(ctx, name, maxWidth, 3);
+                        const startY = y + cellSize / 2 - ((lines.length - 1) * lineHeight) / 2;
+                        lines.forEach((line, i) => {
+                            ctx.fillText(line, x + cellSize / 2, startY + i * lineHeight);
+                        });
+
+                        ctx.restore();
+                    }
+                }
+            }
+
+            return canvas;
+        }
+
+        document.getElementById('btn-download-image').addEventListener('click', () => {
+            if (seats.every(s => !s) && !confirm('This seating plan has no names in it yet. Export an empty grid anyway?')) {
+                return;
+            }
+
+            renderPlanCanvas().toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `seating-plan-${rows}x${cols}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        });
+
+        // Initial state: show setup
+        openSetup(false);
+    </script>
+</body>
+</html>

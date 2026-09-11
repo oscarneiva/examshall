@@ -1,6 +1,6 @@
 # Exams Hall
 
-A minimalistic web-based timer for IB, IGCSE, and custom exams, plus an incident log sheet for invigilators. Static HTML/CSS/JS with no dependencies, build step, or backend.
+A minimalistic web-based timer for IB, IGCSE, and custom exams, plus an incident log sheet for invigilators and a seating plan maker. Static HTML/CSS/JS with no dependencies, build step, or backend.
 
 ## Features
 
@@ -23,11 +23,12 @@ A minimalistic web-based timer for IB, IGCSE, and custom exams, plus an incident
 - Typing `1153` into any time field auto-formats to `11:53`
 - High-contrast black text on white background; inverted white text on highlighted warnings
 - Exam name and countdown scale to the width of their own card (CSS container queries), so four cards per row stay readable without overflowing
+- **Seating Setter**: generate a grid of seats from a row/column count and a list of student names, drag cards to swap seats, and export the plan as a CSV file
 
 ## Usage
 
 1. Open `index.html` in a browser — the **Exams Hall** landing page
-2. Click **Exam Timer** (or **Incident Log Sheet**)
+2. Click **Exam Timer**, **Incident Log Sheet**, or **Seating Setter**
 3. On the timer page, select exam board (IB, IGCSE, or Custom)
 4. Enter exam name, duration, and the start time — for IB this field is the **reading time**, and the exam start is derived as 5 minutes later
 5. Optionally enable extra time and set its percentage (for Custom: also choose which warnings to show and the border color)
@@ -63,6 +64,24 @@ Drag any card and drop it onto another card's position to reorder.
 
 > The CSV is generated entirely in the browser and saved to the device — the site is static, with no backend or upload.
 
+## Seating Setter
+
+`seating-setter.html` generates a grid of seats and lets you drag students between them.
+
+1. Enter the grid size as **Rows** and **Columns** (e.g. 4 and 4 for a 4x4 grid)
+2. Enter the **Student Names**, one per line (or comma-separated) — the first name fills seat 1, the second fills seat 2, and so on, row by row
+3. Click **Generate Seating Plan**
+4. Cards with a student assigned get a light red background; empty seats stay white
+5. **Drag** a card onto another to swap the two students' seats (their colors move with them)
+6. **Click** a card to type a name directly into that seat (useful for empty seats or quick corrections)
+7. The small palette icon on a named card's top-right corner opens a color picker to set that card's own color
+8. The pencil icon next to the title reopens the setup form, pre-filled, to change the grid size or the name list
+9. **Export XLSX** downloads the seating plan as a real `.xlsx` workbook laid out to match the grid (one spreadsheet row per row of seats), with each named cell filled in its card's color
+
+> Fewer names than seats leaves the remaining seats blank; more names than seats fills the grid and leaves the rest out (with a warning). Like the rest of the site, nothing is saved automatically — reloading the page starts a new plan.
+>
+> The `.xlsx` file is a genuine OOXML workbook (the same zip-of-XML format Excel itself produces), assembled entirely in the browser: a small hand-written zip packer (uncompressed/"stored" entries, with the CRC-32 the format requires) builds the archive, and the styles/worksheet XML parts are written by hand too — no library or backend involved. Colors are written as plain hex RGB, not indexed or theme colors.
+
 ## Timer milestones
 
 | Milestone    | IB  | IGCSE | Custom |
@@ -88,24 +107,25 @@ The countdown shows **Time Remaining** until the normal end, then switches to **
 
 ```
 exams-hall/
-  index.html         # Landing page (links to the tools)
-  timer.html         # Exam timer application (HTML + CSS + JS)
-  incident-log.html  # Incident log sheet (HTML + CSS + JS)
-  favicon.ico        # 96x96 icon - the one Google Search reads
-  favicon.svg        # Scalable icon for modern browsers
-  og-image.png       # 1200x630 preview image for shared links
-  robots.txt         # Allows all crawlers, points to the sitemap
-  sitemap.xml        # Lists the three pages for search engines
-  CNAME              # Custom domain for GitHub Pages (examshall.com)
-  LICENSE            # MIT
-  README.md          # This file
+  index.html          # Landing page (links to the tools)
+  timer.html          # Exam timer application (HTML + CSS + JS)
+  incident-log.html   # Incident log sheet (HTML + CSS + JS)
+  seating-setter.html # Seating plan maker (HTML + CSS + JS)
+  favicon.ico         # 96x96 icon - the one Google Search reads
+  favicon.svg         # Scalable icon for modern browsers
+  og-image.png        # 1200x630 preview image for shared links
+  robots.txt          # Allows all crawlers, points to the sitemap
+  sitemap.xml         # Lists the site's pages for search engines
+  CNAME               # Custom domain for GitHub Pages (examshall.com)
+  LICENSE             # MIT
+  README.md           # This file
 ```
 
 The favicon must stay a real file at the site root. An inline `data:` URI renders fine in a browser tab but cannot be fetched by Google's favicon crawler, so search results fall back to a generic globe.
 
 ### Search metadata
 
-Each page carries a `description`, a `canonical` URL, and Open Graph / Twitter Card tags; `index.html` also carries `WebApplication` JSON-LD. If a page's title or description changes, update its `og:title` / `og:description` to match — search engines treat a mismatch as a quality signal. `sitemap.xml` lists all three URLs and should gain a row whenever a page is added.
+Each page carries a `description`, a `canonical` URL, and Open Graph / Twitter Card tags; `index.html` also carries `WebApplication` JSON-LD. If a page's title or description changes, update its `og:title` / `og:description` to match — search engines treat a mismatch as a quality signal. `sitemap.xml` lists every page's URL and should gain a row whenever a page is added.
 
 Each page is fully self-contained — its own markup, styles, and script in one file, with nothing shared between them.
 
