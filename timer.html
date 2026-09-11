@@ -585,6 +585,28 @@
             color: #fff;
         }
 
+        /* "+30:00" - the extra time allowance still to come, shown under the countdown
+           until extra time itself starts. Sized at half the countdown's own clamp so it
+           scales with the card the same way, and colored to match the card's own accent. */
+        .countdown-extra {
+            margin-top: 2px;
+            font-size: clamp(1.2rem, 11.5cqi, 3.75rem);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .exam-card.ib .countdown-extra {
+            color: #1a56db;
+        }
+
+        .exam-card.igcse .countdown-extra {
+            color: #dc2626;
+        }
+
+        .exam-card.custom .countdown-extra {
+            color: var(--accent);
+        }
+
         /* Add timer button (inside grid) */
         .add-card {
             border: 3px dashed #ddd;
@@ -1178,6 +1200,7 @@
             countdownSection.innerHTML = `
                 <div class="countdown-status"></div>
                 <div class="countdown-time">--:--</div>
+                <div class="countdown-extra"></div>
             `;
             card.appendChild(countdownSection);
 
@@ -1400,6 +1423,7 @@
                 // Countdown
                 const statusEl = timer.el.querySelector('.countdown-status');
                 const countdownEl = timer.el.querySelector('.countdown-time');
+                const extraEl = timer.el.querySelector('.countdown-extra');
 
                 const endTime = timer.times.find(t => t.key === 'end');
                 const startTime = timer.times.find(t => t.key === 'start');
@@ -1410,6 +1434,19 @@
                 const startSec = startTime.time * 60;
                 const readingSec = readingTime ? readingTime.time * 60 : null;
                 const finalSec = extraTime ? extraTime.time * 60 : endSec;
+
+                // "+30:00" etc: the extra time allowance still to come. Shown up until
+                // extra time itself starts, at which point the main countdown already
+                // covers it (status switches to "Extra Time").
+                if (extraTime && currentSec < endSec) {
+                    const extraMinTotal = extraTime.time - endTime.time;
+                    const eh = Math.floor(extraMinTotal / 60);
+                    const em = extraMinTotal % 60;
+                    extraEl.textContent = eh > 0 ? `+${pad(eh)}:${pad(em)}:00` : `+${pad(em)}:00`;
+                    extraEl.style.display = '';
+                } else {
+                    extraEl.style.display = 'none';
+                }
 
                 // Highlight: the milestone row during its minute, then the remaining time
                 timer.times.forEach((t, i) => {

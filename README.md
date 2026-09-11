@@ -7,7 +7,7 @@ A minimalistic web-based timer for IB, IGCSE, and custom exams, plus an incident
 - **IB exams**: 5-minute reading time, 30-minute warning, 5-minute warning
 - **IGCSE exams**: 5-minute warning
 - **Custom exams**: no reading time; choose whether to show the 30-minute and/or 5-minute warnings, and pick the card's border/accent color
-- **Optional extra time on any board**: tick the box to include an extra-time allowance and set its percentage of the exam duration (defaults to 25%)
+- **Optional extra time on any board**: tick the box to include an extra-time allowance and set its percentage of the exam duration (defaults to 25%) — while it's still pending, a small `+30:00`-style label under the countdown shows how much extra time will follow once the normal end is reached
 - **Up to 16 simultaneous timers** in a grid (4 per row, wraps to new rows)
 - Drag-and-drop to reorder cards
 - Live countdown with current time display
@@ -23,7 +23,7 @@ A minimalistic web-based timer for IB, IGCSE, and custom exams, plus an incident
 - Typing `1153` into any time field auto-formats to `11:53`
 - High-contrast black text on white background; inverted white text on highlighted warnings
 - Exam name and countdown scale to the width of their own card (CSS container queries), so four cards per row stay readable without overflowing
-- **Seating Setter**: generate a grid of seats from a row/column count and a list of student names, drag cards to swap seats, and export the plan as a CSV file
+- **Seating Setter**: generate a grid of seats from a row/column count and a list of student names, drag cards to swap seats and give them colors, and export the plan as an Excel (.xlsx) file or a PNG image
 
 ## Usage
 
@@ -102,6 +102,8 @@ Custom cards omit the board name above the exam title, since "CUSTOM" carries no
 When a milestone is reached, its row is highlighted (blue for IB, red for IGCSE, the chosen color for Custom) for one minute. After that minute the highlight moves to the remaining-time countdown — with inverted white text — and stays there until the exam ends.
 
 The countdown shows **Time Remaining** until the normal end, then switches to **Extra Time** (counting down the chosen extra-time allowance) until the extra time finishes. With extra time switched off, the timer simply ends at **END**.
+
+Whenever extra time is enabled, a smaller `+30:00`-style line appears under the countdown for as long as extra time hasn't started yet (Waiting to Start, Reading Time, and Time Remaining) — a preview of how much extra time is queued up. It disappears once **Extra Time** itself begins, since the main countdown is then already counting it down.
 
 ## File structure
 
