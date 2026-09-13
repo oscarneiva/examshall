@@ -23,7 +23,7 @@ A minimalistic web-based timer for IB, IGCSE, and custom exams, plus an incident
 - Typing `1153` into any time field auto-formats to `11:53`
 - High-contrast black text on white background; inverted white text on highlighted warnings
 - Exam name and countdown scale to the width of their own card (CSS container queries), so four cards per row stay readable without overflowing
-- **Seating Setter**: generate a grid of seats from a row/column count and a list of student names, drag cards to swap seats and give them colors, and export the plan as an Excel (.xlsx) file or a PNG image
+- **Seating Setter**: generate a grid of seats from a row/column count and a list of student names, drag cards to swap seats and give them colors, export the plan as an Excel (.xlsx) file or a PNG image, and upload an exported `.xlsx` again later to keep editing it
 
 ## Usage
 
@@ -71,16 +71,19 @@ Drag any card and drop it onto another card's position to reorder.
 1. Enter the grid size as **Rows** and **Columns** (e.g. 4 and 4 for a 4x4 grid)
 2. Enter the **Student Names**, one per line (or comma-separated) — the first name fills seat 1, the second fills seat 2, and so on, row by row
 3. Click **Generate Seating Plan**
-4. Cards with a student assigned get a light red background; empty seats stay white
+4. Cards with a student assigned are white; seats with nobody on them are shaded grey
 5. **Drag** a card onto another to swap the two students' seats (their colors move with them)
 6. **Click** a card to type a name directly into that seat (useful for empty seats or quick corrections)
 7. The small palette icon on a named card's top-right corner opens a color picker to set that card's own color
 8. The pencil icon next to the title reopens the setup form, pre-filled, to change the grid size or the name list
-9. **Export XLSX** downloads the seating plan as a real `.xlsx` workbook laid out to match the grid (one spreadsheet row per row of seats), with each named cell filled in its card's color
+9. **Export XLSX** downloads the seating plan as a real `.xlsx` workbook laid out to match the grid (one spreadsheet row per row of seats), with each named cell filled in its card's color and empty seats shaded the same grey they have on screen
+10. **Upload XLSX Plan** on the setup form re-opens a plan you exported earlier: the grid size, the names and the card colors all come back, ready to edit and export again
 
 > Fewer names than seats leaves the remaining seats blank; more names than seats fills the grid and leaves the rest out (with a warning). Like the rest of the site, nothing is saved automatically — reloading the page starts a new plan.
 >
 > The `.xlsx` file is a genuine OOXML workbook (the same zip-of-XML format Excel itself produces), assembled entirely in the browser: a small hand-written zip packer (uncompressed/"stored" entries, with the CRC-32 the format requires) builds the archive, and the styles/worksheet XML parts are written by hand too — no library or backend involved. Colors are written as plain hex RGB, not indexed or theme colors.
+>
+> Reading a workbook back works the same way, in reverse and with no library: the zip's central directory is walked by hand, entries are decompressed with the browser's own `DecompressionStream` (files re-saved by Excel or Google Sheets are DEFLATE-compressed, unlike the stored entries this page writes), and the worksheet and styles XML are parsed for the cell text and its solid fill color. Shared strings, inline strings, a declared sheet dimension and namespace-prefixed XML are all handled, so a plan that has been through Excel or Sheets still loads. Theme and indexed colors cannot be resolved without the theme part, so those cells come back in the default white. The file is read on the device — nothing is uploaded anywhere.
 
 ## Timer milestones
 

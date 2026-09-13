@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Create exam or classroom seating plans. Enter a grid size and student names, drag cards to arrange seats and give them colors, then export the plan as an Excel (.xlsx) file with the colors kept.">
+    <meta name="description" content="Create exam or classroom seating plans. Enter a grid size and student names, drag cards to arrange seats and give them colors, then export the plan as an Excel (.xlsx) file with the colors kept - or upload a plan you exported earlier to carry on editing it.">
     <link rel="canonical" href="https://examshall.com/seating-setter.html">
     <meta name="theme-color" content="#000000">
 
@@ -12,7 +12,7 @@
     <meta property="og:site_name" content="Exams Hall">
     <meta property="og:url" content="https://examshall.com/seating-setter.html">
     <meta property="og:title" content="Seating Setter - Exams Hall">
-    <meta property="og:description" content="Create exam or classroom seating plans. Enter a grid size and student names, drag cards to arrange seats and give them colors, then export the plan as an Excel (.xlsx) file with the colors kept.">
+    <meta property="og:description" content="Create exam or classroom seating plans. Enter a grid size and student names, drag cards to arrange seats and give them colors, then export the plan as an Excel (.xlsx) file with the colors kept - or upload a plan you exported earlier to carry on editing it.">
     <meta property="og:image" content="https://examshall.com/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -140,6 +140,11 @@
             opacity: 0.85;
         }
 
+        .btn:disabled {
+            opacity: 0.55;
+            cursor: default;
+        }
+
         .btn-primary {
             background: #000;
             color: #fff;
@@ -153,6 +158,33 @@
             border: 1px solid #ccc;
             width: 100%;
             margin-top: 8px;
+        }
+
+        /* "or" rule separating making a new plan from uploading an existing one */
+        .setup-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0 2px;
+            color: #aaa;
+            font-size: 0.85rem;
+        }
+
+        .setup-divider::before,
+        .setup-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e5e5e5;
+        }
+
+        /* Native file input the upload button stands in for */
+        .file-input-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
         }
 
         /* Plan view */
@@ -225,9 +257,9 @@
         .seat-card {
             position: relative;
             aspect-ratio: 1;
-            border: 2px solid #e2e2e2;
+            border: 2px solid #e0e0e0;
             border-radius: 10px;
-            background: #fff;
+            background: #ededed;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -239,8 +271,8 @@
         }
 
         .seat-card.has-name {
-            background: #fee2e2;
-            border-color: #f3a8a8;
+            background: #fff;
+            border-color: #d4d4d4;
         }
 
         .seat-card:hover {
@@ -441,6 +473,14 @@
                 <p class="form-hint">Fewer names than seats leaves the rest blank. Extra names beyond the grid size are left out.</p>
             </div>
             <button class="btn btn-primary" id="btn-generate">Generate Seating Plan</button>
+
+            <div class="setup-divider">or</div>
+
+            <button class="btn btn-secondary" id="btn-upload">Upload XLSX Plan</button>
+            <p class="form-hint">Re-open a plan exported from this page. The grid size, names and card colors all come back.</p>
+            <input type="file" id="xlsx-input" class="file-input-hidden" tabindex="-1" aria-hidden="true"
+                   accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+
             <button class="btn btn-secondary" id="btn-setup-cancel" style="display: none;">Cancel</button>
         </div>
     </div>
@@ -475,6 +515,13 @@
     </a>
 
     <script>
+        // Card colors. A seat with a student on it is white; an empty seat is grey.
+        // The stylesheet repeats these for the live cards - keep the two in step.
+        const DEFAULT_NAME_FILL = '#ffffff';
+        const DEFAULT_NAME_BORDER = '#d4d4d4';
+        const EMPTY_SEAT_FILL = '#ededed';
+        const EMPTY_SEAT_BORDER = '#e0e0e0';
+
         // State
         let rows = 4;
         let cols = 4;
@@ -606,7 +653,7 @@
                 colorInput.className = 'seat-color-input';
                 colorInput.tabIndex = -1;
                 colorInput.setAttribute('aria-hidden', 'true');
-                colorInput.value = color || '#fee2e2';
+                colorInput.value = color || DEFAULT_NAME_FILL;
 
                 const colorBtn = document.createElement('button');
                 colorBtn.type = 'button';
@@ -730,8 +777,6 @@
         // An .xlsx is a zip archive of XML parts. With no build step or library allowed
         // on this site, both pieces are written here by hand: a minimal (stored, i.e.
         // uncompressed) zip packer below, and the OOXML parts themselves further down.
-
-        const DEFAULT_NAME_FILL = '#fee2e2';
 
         function xmlEscape(value) {
             return String(value == null ? '' : value)
@@ -889,11 +934,14 @@
                 const cellsXml = [];
                 for (let c = 0; c < cols; c++) {
                     const name = seats[r * cols + c];
-                    if (!name) continue;
-                    const color = seatColors[r * cols + c] || DEFAULT_NAME_FILL;
+                    const color = name ? (seatColors[r * cols + c] || DEFAULT_NAME_FILL) : EMPTY_SEAT_FILL;
                     const xfIndex = styles.xfIndexFor(color);
                     const ref = colLetters(c + 1) + (r + 1);
-                    cellsXml.push(`<c r="${ref}" s="${xfIndex}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(name)}</t></is></c>`);
+                    // Empty seats are written as a styled but valueless cell, so the
+                    // grey carries across to the spreadsheet the way it does on screen.
+                    cellsXml.push(name
+                        ? `<c r="${ref}" s="${xfIndex}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(name)}</t></is></c>`
+                        : `<c r="${ref}" s="${xfIndex}"/>`);
                 }
                 rowsXml.push(`<row r="${r + 1}">${cellsXml.join('')}</row>`);
             }
@@ -1063,11 +1111,11 @@
                     const x = padding + c * (cellSize + gap);
                     const y = padding + r * (cellSize + gap);
 
-                    let fill = '#ffffff';
-                    let border = '#e2e2e2';
+                    let fill = EMPTY_SEAT_FILL;
+                    let border = EMPTY_SEAT_BORDER;
                     if (name) {
                         fill = customColor || DEFAULT_NAME_FILL;
-                        border = customColor || '#f3a8a8';
+                        border = customColor || DEFAULT_NAME_BORDER;
                     }
 
                     roundedRectPath(ctx, x, y, cellSize, cellSize, 10);
@@ -1125,6 +1173,274 @@
                 a.click();
                 URL.revokeObjectURL(url);
             }, 'image/png');
+        });
+
+        // --- Import a plan back from an .xlsx file ---
+        // The mirror image of the export above, written by hand for the same reason: a
+        // small unzipper, then just enough OOXML parsing to recover the names on the
+        // first sheet and the fill color behind each one.
+
+        const MAX_SEATS = 400;
+
+        const btnUpload = document.getElementById('btn-upload');
+        const xlsxInput = document.getElementById('xlsx-input');
+
+        // Raw DEFLATE through the browser's own decompressor. This page writes stored
+        // (uncompressed) entries, but a file re-saved by Excel or Sheets is deflated.
+        async function inflateRaw(bytes) {
+            if (typeof DecompressionStream !== 'function') {
+                throw new Error('This browser cannot open compressed .xlsx files. Try a recent Chrome, Edge, Firefox or Safari.');
+            }
+            const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+            return new Uint8Array(await new Response(stream).arrayBuffer());
+        }
+
+        // Unpack a zip into { filename: Uint8Array }, reading the central directory that
+        // the end-of-central-directory record at the tail of the file points at.
+        async function readZip(buffer) {
+            const bytes = new Uint8Array(buffer);
+            const view = new DataView(buffer);
+            const decoder = new TextDecoder();
+
+            let eocd = -1;
+            for (let i = bytes.length - 22; i >= 0 && i >= bytes.length - 65557; i--) {
+                if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+            }
+            if (eocd < 0) throw new Error('That file is not a .xlsx workbook.');
+
+            const count = view.getUint16(eocd + 10, true);
+            let pos = view.getUint32(eocd + 16, true);
+            const entries = {};
+
+            for (let n = 0; n < count; n++) {
+                if (pos + 46 > bytes.length || view.getUint32(pos, true) !== 0x02014b50) break;
+                const method = view.getUint16(pos + 10, true);
+                const compSize = view.getUint32(pos + 20, true);
+                const nameLen = view.getUint16(pos + 28, true);
+                const extraLen = view.getUint16(pos + 30, true);
+                const commentLen = view.getUint16(pos + 32, true);
+                const localOffset = view.getUint32(pos + 42, true);
+                const name = decoder.decode(bytes.subarray(pos + 46, pos + 46 + nameLen));
+
+                // The local header repeats the name and carries its own extra field, so
+                // the payload only starts once both have been stepped over.
+                const localNameLen = view.getUint16(localOffset + 26, true);
+                const localExtraLen = view.getUint16(localOffset + 28, true);
+                const dataStart = localOffset + 30 + localNameLen + localExtraLen;
+                const data = bytes.subarray(dataStart, dataStart + compSize);
+
+                if (method === 0) entries[name] = data;
+                else if (method === 8) entries[name] = await inflateRaw(data);
+                // Other compression methods are skipped: the parts needed here are
+                // always stored or deflated in practice.
+
+                pos += 46 + nameLen + extraLen + commentLen;
+            }
+            return entries;
+        }
+
+        function parseXml(bytes) {
+            const doc = new DOMParser().parseFromString(new TextDecoder().decode(bytes), 'application/xml');
+            if (doc.getElementsByTagName('parsererror').length) {
+                throw new Error('That workbook contains XML this page could not read.');
+            }
+            return doc;
+        }
+
+        // Namespace-agnostic element lookup - some writers prefix the spreadsheetml
+        // namespace (<x:row>) instead of using it as the default.
+        function tags(node, name) {
+            return Array.from(node.getElementsByTagNameNS('*', name));
+        }
+
+        // Text in a sheet may be inline, or an index into this shared table
+        function readSharedStrings(entries) {
+            const part = entries['xl/sharedStrings.xml'];
+            if (!part) return [];
+            return tags(parseXml(part), 'si').map(si => tags(si, 't').map(t => t.textContent).join(''));
+        }
+
+        // cellXfs index -> '#rrggbb', or null where the cell has no readable solid fill
+        function readFillColors(entries) {
+            const part = entries['xl/styles.xml'];
+            if (!part) return [];
+            const doc = parseXml(part);
+
+            const fillsEl = tags(doc, 'fills')[0];
+            const fillColors = fillsEl ? Array.from(fillsEl.children).map(fill => {
+                const pattern = tags(fill, 'patternFill')[0];
+                if (!pattern || pattern.getAttribute('patternType') === 'none') return null;
+                const fg = tags(pattern, 'fgColor')[0];
+                const rgb = fg && fg.getAttribute('rgb');
+                // Indexed and theme colors need the theme part to resolve, so a cell
+                // using one simply keeps the grid's default look.
+                if (!rgb) return null;
+                const hex = rgb.length === 8 ? rgb.slice(2) : rgb;
+                return /^[0-9a-f]{6}$/i.test(hex) ? '#' + hex.toLowerCase() : null;
+            }) : [];
+
+            const xfsEl = tags(doc, 'cellXfs')[0];
+            if (!xfsEl) return [];
+            return Array.from(xfsEl.children).map(xf => {
+                const fillId = parseInt(xf.getAttribute('fillId'), 10);
+                return Number.isInteger(fillId) ? (fillColors[fillId] || null) : null;
+            });
+        }
+
+        // The workbook's first sheet, resolved through the relationship part so a file
+        // whose sheet isn't the conventional sheet1.xml still opens.
+        function findSheetPart(entries) {
+            const workbook = entries['xl/workbook.xml'];
+            const rels = entries['xl/_rels/workbook.xml.rels'];
+            if (workbook && rels) {
+                const sheet = tags(parseXml(workbook), 'sheet')[0];
+                const relId = sheet && (sheet.getAttribute('r:id') ||
+                    sheet.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id'));
+                if (relId) {
+                    const rel = tags(parseXml(rels), 'Relationship').find(r => r.getAttribute('Id') === relId);
+                    const target = rel && rel.getAttribute('Target');
+                    if (target) {
+                        const path = 'xl/' + target.replace(/^\//, '').replace(/^xl\//, '');
+                        if (entries[path]) return entries[path];
+                    }
+                }
+            }
+            const fallback = Object.keys(entries).find(name => /^xl\/worksheets\/[^/]+\.xml$/.test(name));
+            if (!fallback) throw new Error('No worksheet was found inside that .xlsx file.');
+            return entries[fallback];
+        }
+
+        // 'AB12' -> { col: 28, row: 12 }, both 1-indexed
+        function parseCellRef(ref) {
+            const m = /^([A-Z]+)(\d+)$/i.exec((ref || '').trim());
+            if (!m) return null;
+            let col = 0;
+            for (const ch of m[1].toUpperCase()) col = col * 26 + (ch.charCodeAt(0) - 64);
+            return { col, row: parseInt(m[2], 10) };
+        }
+
+        function cellText(cell, sharedStrings) {
+            const type = cell.getAttribute('t');
+            if (type === 'inlineStr') return tags(cell, 't').map(t => t.textContent).join('').trim();
+            const v = tags(cell, 'v')[0];
+            if (!v) return '';
+            if (type === 's') return (sharedStrings[parseInt(v.textContent, 10)] || '').trim();
+            return v.textContent.trim();
+        }
+
+        async function readPlanFromXlsx(file) {
+            const entries = await readZip(await file.arrayBuffer());
+            const sharedStrings = readSharedStrings(entries);
+            const xfColors = readFillColors(entries);
+            const doc = parseXml(findSheetPart(entries));
+
+            const cells = [];
+            let cellMaxRow = 0, cellMaxCol = 0; // block the names actually occupy
+            let hintRows = 0, hintCols = 0;     // how big the file says the sheet is
+
+            tags(doc, 'row').forEach(rowEl => {
+                const rowAttr = parseInt(rowEl.getAttribute('r'), 10);
+                let rowNum = Number.isInteger(rowAttr) ? rowAttr : hintRows + 1;
+                let colCursor = 0;
+
+                tags(rowEl, 'c').forEach(cellEl => {
+                    // Cell references are optional; without one a cell follows the last
+                    const ref = parseCellRef(cellEl.getAttribute('r'));
+                    if (ref) { rowNum = ref.row; colCursor = ref.col; } else { colCursor++; }
+                    const col = colCursor;
+
+                    const name = cellText(cellEl, sharedStrings);
+                    if (!name) return;
+                    const xf = parseInt(cellEl.getAttribute('s'), 10);
+                    cells.push({
+                        row: rowNum,
+                        col: col,
+                        name: name,
+                        color: Number.isInteger(xf) ? (xfColors[xf] || null) : null
+                    });
+                    if (rowNum > cellMaxRow) cellMaxRow = rowNum;
+                    if (col > cellMaxCol) cellMaxCol = col;
+                });
+
+                if (rowNum > hintRows) hintRows = rowNum;
+            });
+
+            // Rows and columns left entirely empty are still part of the plan, so take
+            // the widest hint the file gives: its declared dimension, and the per-column
+            // widths this page writes for every column of the grid.
+            const dimRef = (tags(doc, 'dimension')[0] || { getAttribute: () => null }).getAttribute('ref');
+            if (dimRef) {
+                const end = parseCellRef(dimRef.split(':').pop());
+                if (end) {
+                    hintRows = Math.max(hintRows, end.row);
+                    hintCols = Math.max(hintCols, end.col);
+                }
+            }
+            tags(doc, 'col').forEach(colEl => {
+                const max = parseInt(colEl.getAttribute('max'), 10);
+                // Excel also writes a whole-sheet default column (max 16384) - ignore it
+                if (Number.isInteger(max) && max <= MAX_SEATS) hintCols = Math.max(hintCols, max);
+            });
+
+            let gridRows = Math.max(cellMaxRow, hintRows);
+            let gridCols = Math.max(cellMaxCol, hintCols);
+
+            // Some exporters pad a sheet out to its full 1000-row grid; when the hints
+            // are that generous, trust only the block the names sit in.
+            if (gridRows * gridCols > MAX_SEATS) {
+                gridRows = cellMaxRow;
+                gridCols = cellMaxCol;
+            }
+
+            if (!gridRows || !gridCols) {
+                throw new Error('The first sheet of that workbook is empty - there is no seating plan to load.');
+            }
+            if (gridRows * gridCols > MAX_SEATS) {
+                throw new Error(`That sheet is ${gridRows} rows by ${gridCols} columns, which is more than the ${MAX_SEATS}-seat limit.`);
+            }
+
+            const nextSeats = new Array(gridRows * gridCols).fill('');
+            const nextColors = new Array(gridRows * gridCols).fill(null);
+            cells.forEach(cell => {
+                const index = (cell.row - 1) * gridCols + (cell.col - 1);
+                if (index < 0 || index >= nextSeats.length) return;
+                nextSeats[index] = cell.name;
+                // The default light red is the grid's own look rather than a chosen
+                // color, so it comes back as "no custom color".
+                nextColors[index] = cell.color && cell.color !== DEFAULT_NAME_FILL ? cell.color : null;
+            });
+
+            return { rows: gridRows, cols: gridCols, seats: nextSeats, seatColors: nextColors };
+        }
+
+        btnUpload.addEventListener('click', () => xlsxInput.click());
+
+        xlsxInput.addEventListener('change', async () => {
+            const file = xlsxInput.files[0];
+            if (!file) return;
+
+            const label = btnUpload.textContent;
+            btnUpload.disabled = true;
+            btnUpload.textContent = 'Reading file...';
+
+            try {
+                const plan = await readPlanFromXlsx(file);
+                rows = plan.rows;
+                cols = plan.cols;
+                seats = plan.seats;
+                seatColors = plan.seatColors;
+
+                renderGrid();
+                setupOverlay.classList.add('hidden');
+                planView.classList.add('active');
+            } catch (err) {
+                alert(err && err.message ? err.message : 'That file could not be read as a seating plan.');
+            } finally {
+                btnUpload.disabled = false;
+                btnUpload.textContent = label;
+                // Reset so picking the same file again still fires a change event
+                xlsxInput.value = '';
+            }
         });
 
         // Initial state: show setup
